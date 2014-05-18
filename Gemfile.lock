@@ -1,0 +1,12 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    ffi (1.9.3)
+    libtcod (0.0.9)
+      ffi
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  libtcod
