@@ -1,5 +1,6 @@
+require_relative './objects.rb'
 
-Map=Struct.new(:map,:playerPos,:objects)
+Map=Struct.new(:map,:objects)
 
 Pos=Struct.new(:x,:y)
 
@@ -17,6 +18,9 @@ class Rect
     center_x = (@x1 + @x2) / 2
     center_y = (@y1 + @y2) / 2
     [center_x, center_y]
+  end
+  def top_middle
+    [(@x1+@x2)/2,@y1+1]
   end
   def shrink(d)
     Rect.new(x1+d,y1+d,w-2*d,h-2*d)
@@ -65,27 +69,29 @@ def create_v_tunnel(map,y1, y2, x)
   end
 end
 
-def place_objects(room)
+def place_objects(room, num_rooms)
   objects = []
   #choose random number of monsters
   num_monsters = TCOD.random_get_int(nil, 0, MAX_ROOM_MONSTERS)
-
+  if num_rooms ==0
+    objects << object(room.center, :player)
+    objects << object(room.top_middle, :king)
+  end
   num_monsters.times do
     #choose random spot for this monster
     x = TCOD.random_get_int(nil, room.x1, room.x2)
     y = TCOD.random_get_int(nil, room.y1, room.y2)
 
     if TCOD.random_get_int(nil, 0, 100) < 80  #80% chance of getting an orc
-      #create an orc
-      monster = Obj.new(x, y, 'o', TCOD::Color::DESATURATED_GREEN)
+      monster = object([x,y],:orc)
     else
-      #create a troll
-      monster = Obj.new(x, y, 'T', TCOD::Color::DARKER_GREEN)
+      monster = object([x,y],:troll)
     end
-
 
     objects<<monster
   end
+
+
   objects
 end
 
@@ -94,7 +100,6 @@ def make_map
   #map = [[0]*MAP_HEIGHT]*MAP_WIDTH
   map = []
   objects = []
-  playerPos = nil
 
   0.upto(MAP_WIDTH-1) do |x|
     map.push([])
@@ -133,22 +138,16 @@ def make_map
       #"paint" it to the map's tiles
       create_room(map,new_room)
 
-      objects<<place_objects( new_room)
+      objects<<place_objects( new_room, num_rooms)
       objects.flatten!
 
       #center coordinates of new room, will be useful later
       new_x, new_y = new_room.center
 
 
-      #there's a 30% chance of placing a skeleton slightly off to the center of this room
-      if TCOD.random_get_int(nil, 1, 100) <= 30
-        skeleton = Obj.new(new_x + 1, new_y, SKELETON_TILE, TCOD::Color::LIGHT_YELLOW)
-        objects.push(skeleton)
-      end
-
       if num_rooms == 0
         #this.equal? the first room, where the $player starts at
-        playerPos = Pos.new(new_x, new_y)
+      #  objects << Obj.new(new_x, new_y, MAGE_TILE, :player, TCOD::Color::WHITE)
       else
         #all rooms after the first
         #connect it to the previous room with a tunnel
@@ -173,7 +172,7 @@ def make_map
       num_rooms += 1
     end
   end
-  map=Map.new(map, playerPos, objects)
+  map=Map.new(map, objects)
   objects.each{|o|o.map=map}
 
   map

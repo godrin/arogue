@@ -24,6 +24,7 @@ TORCH_RADIUS = 10
 
 LIMIT_FPS = 20  #20 frames-per-second maximum
 
+KING_TILE = 'K'.ord
 MAGE_TILE = '@'.ord
 SKELETON_TILE = 's'.ord
 
@@ -72,6 +73,9 @@ class Map
   def [](x,y)
     self.map[x][y]
   end
+  def player
+    @player||=objects.find{|o|o.type==:player}
+  end
 end
 
 class Story
@@ -98,14 +102,15 @@ class Story
 end
 
 class Obj
-  attr_accessor :x, :y, :char, :color, :map
+  attr_accessor :x, :y, :char, :type, :color, :map
 
   #this.equal? a generic object: the $player, a monster, an item, the stairs...
   #it's always represented by a character on screen.
-  def initialize (x, y, char, color)
+  def initialize (x, y, char, type, color)
     @x = x
     @y = y
     @char = char
+    @type = type
     @color = color
   end
  
@@ -141,7 +146,7 @@ def render_all(map)
   if $fov_recompute or true
     #recompute FOV if needed(the $player moved or something)
     $fov_recompute = false
-    TCOD.map_compute_fov($fov_map, $player.x, $player.y, TORCH_RADIUS, FOV_LIGHT_WALLS, FOV_ALGO)
+    TCOD.map_compute_fov($fov_map, map.player.x, map.player.y, TORCH_RADIUS, FOV_LIGHT_WALLS, FOV_ALGO)
 
     #go through all tiles, and set their background color according to the FOV
     0.upto(MAP_HEIGHT-1) do |y|
@@ -178,7 +183,7 @@ def render_all(map)
   TCOD.console_blit($con, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, nil, 0, 0, 1.0, 1.0)
 end
 
-def handle_keys
+def handle_keys(map)
   if REAL_TIME
     key = TCOD.console_check_for_keypress(TCOD::KEY_PRESSED)  #real-time
   else
@@ -191,19 +196,28 @@ def handle_keys
     return true  #exit game
   end
 
-  #movement keys
-  if TCOD.console_is_key_pressed(TCOD::KEY_UP)
-    $player.move(0, -1)
-    $fov_recompute = true
-  elsif TCOD.console_is_key_pressed(TCOD::KEY_DOWN)
-    $player.move(0, 1)
-    $fov_recompute = true
-  elsif TCOD.console_is_key_pressed(TCOD::KEY_LEFT)
-    $player.move(-1, 0)
-    $fov_recompute = true
-  elsif TCOD.console_is_key_pressed(TCOD::KEY_RIGHT)
-    $player.move(1, 0)
-    $fov_recompute = true
+
+  if $overlays.length>0
+    if TCOD.console_is_key_pressed(TCOD::KEY_SPACE)
+      $overlays.clear
+    end
+    #@overlays[0]
+  else
+    player=map.player
+    #movement keys
+    if TCOD.console_is_key_pressed(TCOD::KEY_UP)
+      player.move(0, -1)
+      $fov_recompute = true
+    elsif TCOD.console_is_key_pressed(TCOD::KEY_DOWN)
+      player.move(0, 1)
+      $fov_recompute = true
+    elsif TCOD.console_is_key_pressed(TCOD::KEY_LEFT)
+      player.move(-1, 0)
+      $fov_recompute = true
+    elsif TCOD.console_is_key_pressed(TCOD::KEY_RIGHT)
+      player.move(1, 0)
+      $fov_recompute = true
+    end
   end
   false
 end
@@ -223,21 +237,18 @@ $con = TCOD.console_new(SCREEN_WIDTH, SCREEN_HEIGHT)
 TCOD.console_map_ascii_codes_to_font(0, 255, 0, 0) 
 
 #create object representing the $player
-$player = Obj.new(0, 0, MAGE_TILE, TCOD::Color::WHITE)
 
 $story = Story.new
 #the list of objects with just the $player
-$objects = [$player]
 $overlays = [$story]
 
 #generate $map(at this point it's not drawn to the screen)
 mapInfo = make_map
 $map=mapInfo
-$player.x=mapInfo.playerPos.x
-$player.y=mapInfo.playerPos.y
-$objects << mapInfo.objects
-$objects.flatten!
-$player.map=mapInfo
+$objects = mapInfo.objects
+$player=mapInfo.objects.find{|o|o.type==:player}
+#pp $player
+#exit
 
 
 #create the FOV $map, according to the generated $map
@@ -260,7 +271,7 @@ until TCOD.console_is_window_closed()
   TCOD.console_flush()
 
   #handle keys and exit game if needed
-  will_exit = handle_keys()
+  will_exit = handle_keys($map)
   break if will_exit
 end
 # hard exit, because it hangs otherwise
