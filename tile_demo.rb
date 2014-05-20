@@ -76,6 +76,12 @@ class Map
   def player
     @player||=objects.find{|o|o.type==:player}
   end
+  def blocked(x,y)
+
+    self[x,y].blocked or begin
+      self.objects.find{|o|o.x==x and o.y==y and o.block }
+  end
+  end
 end
 
 class Story
@@ -111,11 +117,6 @@ class ObjPainter
       TCOD.console_put_char($con, what.x, what.y, what.char.ord, TCOD::BKGND_NONE)
     end
   end
- 
-  #def clear
-  #  #erase the character that represents this object
-  # TCOD.console_put_char($con, @x, @y, ' '.ord, TCOD::BKGND_NONE)
-  ##nd
 end
 
 class AI

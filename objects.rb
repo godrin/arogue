@@ -1,22 +1,12 @@
 
+Obj=Struct.new(:x, :y, :char, :type, :color, :map, :block, :block_view)
 class Obj
-  attr_accessor :x, :y, :char, :type, :color, :map
 
-  #this.equal? a generic object: the $player, a monster, an item, the stairs...
-  #it's always represented by a character on screen.
-  def initialize (x, y, char, type, color)
-    @x = x
-    @y = y
-    @char = char
-    @type = type
-    @color = color
-  end
- 
   def move (dx, dy)
     #move by the given amount, if the destination.equal? not blocked
-    if not @map[@x + dx,@y + dy].blocked
-      @x += dx
-      @y += dy
+    if not self.map.blocked(self.x + dx,self.y + dy)
+      self.x += dx
+      self.y += dy
     end
   end
  
@@ -34,5 +24,5 @@ def object(pos,type)
 
   }[type]
   
-  Obj.new(*pos, t.tile, type, t.color)
+  Obj.new(*pos, t.tile, type, t.color, nil, true, true)
 end
