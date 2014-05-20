@@ -101,40 +101,21 @@ class Story
 
 end
 
-class Obj
-  attr_accessor :x, :y, :char, :type, :color, :map
+class ObjPainter
 
-  #this.equal? a generic object: the $player, a monster, an item, the stairs...
-  #it's always represented by a character on screen.
-  def initialize (x, y, char, type, color)
-    @x = x
-    @y = y
-    @char = char
-    @type = type
-    @color = color
-  end
- 
-  def move (dx, dy)
-    #move by the given amount, if the destination.equal? not blocked
-    if not @map[@x + dx,@y + dy].blocked
-      @x += dx
-      @y += dy
-    end
-  end
- 
-  def draw
+  def draw(what)
     #only show if it's visible to the $player
-    if TCOD.map_is_in_fov($fov_map, @x, @y)
+    if TCOD.map_is_in_fov($fov_map, what.x, what.y)
       #set the color and then draw the character that represents this object at its position
-      TCOD.console_set_default_foreground($con, @color)
-      TCOD.console_put_char($con, @x, @y, @char.ord, TCOD::BKGND_NONE)
+      TCOD.console_set_default_foreground($con, what.color)
+      TCOD.console_put_char($con, what.x, what.y, what.char.ord, TCOD::BKGND_NONE)
     end
   end
  
-  def clear
-    #erase the character that represents this object
-    TCOD.console_put_char($con, @x, @y, ' '.ord, TCOD::BKGND_NONE)
-  end
+  #def clear
+  #  #erase the character that represents this object
+  # TCOD.console_put_char($con, @x, @y, ' '.ord, TCOD::BKGND_NONE)
+  ##nd
 end
 
 class AI
@@ -170,9 +151,11 @@ def render_all(map)
     end
   end
 
+  objPainter=ObjPainter.new
+
   #draw all objects in the list
   $objects.each do |object|
-    object.draw()
+    objPainter.draw(object)
   end
 
   $overlays.each do |overlay|

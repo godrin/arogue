@@ -1,4 +1,26 @@
 
+class Obj
+  attr_accessor :x, :y, :char, :type, :color, :map
+
+  #this.equal? a generic object: the $player, a monster, an item, the stairs...
+  #it's always represented by a character on screen.
+  def initialize (x, y, char, type, color)
+    @x = x
+    @y = y
+    @char = char
+    @type = type
+    @color = color
+  end
+ 
+  def move (dx, dy)
+    #move by the given amount, if the destination.equal? not blocked
+    if not @map[@x + dx,@y + dy].blocked
+      @x += dx
+      @y += dy
+    end
+  end
+ 
+end
 
 def object(pos,type)
   c=TCOD::Color
