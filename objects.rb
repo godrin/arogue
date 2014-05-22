@@ -1,5 +1,5 @@
 
-Obj=Struct.new(:x, :y, :char, :type, :color, :map, :block, :block_view)
+Obj=Struct.new(:x, :y, :name, :char, :type, :color, :map, :block, :block_view, :hp)
 class Obj
 
   def move (dx, dy)
@@ -9,20 +9,29 @@ class Obj
       self.y += dy
     end
   end
- 
+end
+
+module FightingObj
+  def fight(obj)
+  end
 end
 
 def object(pos,type)
   c=TCOD::Color
-  d=Struct.new(:tile, :color, :probability)
+  d=Struct.new(:name, :tile, :color, :probability, :hp)
 
-  t={
-    :king=>d.new('K',c::YELLOW, 0),
-    :player => d.new('@',c::WHITE, 0),
-    :orc => d.new('o', c::DESATURATED_GREEN, 0.8),
-    :troll => d.new('T', c::DARKER_GREEN, 1 )
+  ts=[
+    d.new('King' ,'K',c::YELLOW, 0, 90),
+    d.new('Player', '@',c::WHITE, 0, 20),
+    d.new('Orc', 'o', c::DESATURATED_GREEN, 0.8, 5),
+    d.new('Troll', 'T', c::DARKER_GREEN, 1, 10)
+  ]
 
-  }[type]
+  t={}
+  ts.each{|x|
+    t[x.name.downcase.to_sym]=x
+  }
+  t=t[type]
   
-  Obj.new(*pos, t.tile, type, t.color, nil, true, true)
+  Obj.new(*pos, t.name, t.tile, type, t.color, nil, true, true)
 end

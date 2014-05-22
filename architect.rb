@@ -25,6 +25,9 @@ class Rect
   def shrink(d)
     Rect.new(x1+d,y1+d,w-2*d,h-2*d)
   end
+  def moved(x,y)
+    Rect.new(x1+x,y1+y,w,h)
+  end
  
   def intersect (other)
     #returns true if this rectangle intersects with another one
@@ -78,17 +81,25 @@ def place_objects(room, num_rooms)
     objects << object(room.top_middle, :king)
   end
   num_monsters.times do
-    #choose random spot for this monster
-    x = TCOD.random_get_int(nil, room.x1, room.x2)
-    y = TCOD.random_get_int(nil, room.y1, room.y2)
-
-    if TCOD.random_get_int(nil, 0, 100) < 80  #80% chance of getting an orc
-      monster = object([x,y],:orc)
-    else
-      monster = object([x,y],:troll)
+    trials=100
+    while trials>0
+      #choose random spot for this monster
+      x = TCOD.random_get_int(nil, room.x1 + 1, room.x2-1)
+      y = TCOD.random_get_int(nil, room.y1 + 1, room.y2-1)
+      trials-=1
+      break unless objects.find{|o|o.x==x and o.y==y}
     end
 
-    objects<<monster
+    if trials>0
+
+      if TCOD.random_get_int(nil, 0, 100) < 80  #80% chance of getting an orc
+        monster = object([x,y],:orc)
+      else
+        monster = object([x,y],:troll)
+      end
+
+      objects<<monster
+    end
   end
 
 

@@ -3,10 +3,11 @@
 require 'libtcod'
 require_relative './colors.rb'
 require_relative './architect.rb'
+require_relative './screen.rb'
 
 #actual size of the window
-SCREEN_WIDTH = 50
-SCREEN_HEIGHT = 17
+SCREEN_WIDTH = 80
+SCREEN_HEIGHT = 30
 
 #size of the $map
 MAP_WIDTH = SCREEN_WIDTH
@@ -77,10 +78,9 @@ class Map
     @player||=objects.find{|o|o.type==:player}
   end
   def blocked(x,y)
-
     self[x,y].blocked or begin
       self.objects.find{|o|o.x==x and o.y==y and o.block }
-  end
+    end
   end
 end
 
@@ -89,6 +89,7 @@ class Story
     @text=">>Yksjdhf sdfkjhsdf ksjfdh dsfkj hkjsdhf sdks sf <<"
     @title="King"
     @r=Rect.new(5,2,30,4)
+    #@r=Rect.new(0,0,SCREEN_WIDTH,SCREEN_HEIGHT) #:5,2,30,4)
     @color=TCOD::Color.rgb(150,150,150)
     @bgColor=TCOD::Color.rgb(20,20,20)
     @titleColor=TCOD::Color.rgb(180,150,150)
@@ -97,14 +98,30 @@ class Story
     TCOD.console_set_default_background($con, @bgColor)
     TCOD.console_set_default_foreground($con, @titleColor)
     TCOD.console_rect($con,@r.x1,@r.y1,@r.w,@r.h,false,TCOD::BKGND_DARKEN)
-    TCOD.console_print_rect($con,*@r.xywh,@title)
+
+    $screen.rect_text(@title,@titleColor,*@r.xywh)
+    #TCOD.console_print_rect($con,*@r.xywh,@title)
     TCOD.console_set_default_foreground($con, @color)
     h= TCOD.console_print_rect($con,*@r.shrink(1).xywh,@text)
     if h>@r.h
       puts "ERROR"
     end
   end
+end
 
+class ObjView
+  def initialize(obj, pos)
+    @obj=obj
+    @pos=pos
+    @r=Rect.new(*pos,15,1)
+  end
+
+  def draw
+    text=@obj.char+": "+@obj.name
+    TCOD.console_print_rect($con,*@r.xywh,text)
+    TCOD.console_set_default_background($con, TCOD::Color::YELLOW)
+    TCOD.console_rect($con,*@r.moved(0,1).xywh,false,TCOD::BKGND_SET)
+  end
 end
 
 class ObjPainter
@@ -216,6 +233,7 @@ TCOD.console_set_custom_font(File.join(File.dirname(__FILE__), 'font','font-11.p
 TCOD.console_init_root(SCREEN_WIDTH, SCREEN_HEIGHT, 'story roguelike', false, TCOD::RENDERER_SDL)
 TCOD.sys_set_fps(LIMIT_FPS)
 $con = TCOD.console_new(SCREEN_WIDTH, SCREEN_HEIGHT)
+$screen = Screen.new($con)
 
 
 TCOD.console_map_ascii_codes_to_font(0, 255, 0, 0) 
@@ -224,7 +242,6 @@ TCOD.console_map_ascii_codes_to_font(0, 255, 0, 0)
 
 $story = Story.new
 #the list of objects with just the $player
-$overlays = [$story]
 
 #generate $map(at this point it's not drawn to the screen)
 mapInfo = make_map
@@ -233,6 +250,7 @@ $objects = mapInfo.objects
 $player=mapInfo.objects.find{|o|o.type==:player}
 #pp $player
 #exit
+$overlays = [$story, ObjView.new($player,Pos.new(3,10))]
 
 
 #create the FOV $map, according to the generated $map
