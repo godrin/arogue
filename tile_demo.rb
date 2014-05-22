@@ -100,12 +100,8 @@ class Story
     TCOD.console_rect($con,@r.x1,@r.y1,@r.w,@r.h,false,TCOD::BKGND_DARKEN)
 
     $screen.rect_text(@title,@titleColor,*@r.xywh)
-    #TCOD.console_print_rect($con,*@r.xywh,@title)
     TCOD.console_set_default_foreground($con, @color)
-    h= TCOD.console_print_rect($con,*@r.shrink(1).xywh,@text)
-    if h>@r.h
-      puts "ERROR"
-    end
+    TCOD.console_print_rect($con,*@r.shrink(1).xywh,@text)
   end
 end
 
@@ -132,6 +128,7 @@ class ObjPainter
       #set the color and then draw the character that represents this object at its position
       TCOD.console_set_default_foreground($con, what.color)
       TCOD.console_put_char($con, what.x, what.y, what.char.ord, TCOD::BKGND_NONE)
+      return true
     end
   end
 end
@@ -164,6 +161,10 @@ def render_all(map)
             map[x,y].explored = true
           end
           TCOD.console_put_char_ex($con, x, y, cell.char.ord, fgColor, bgColor )
+        else
+          fgColor=bgColor=TCOD::Color::BLACK
+          c=" "
+          TCOD.console_put_char_ex($con, x, y, c.ord, fgColor, bgColor )
         end
       end
     end
@@ -197,10 +198,10 @@ def handle_keys(map)
     return true  #exit game
   end
 
-
-  if $overlays.length>0
+  story=$overlays.find{|o|o.is_a?(Story)}
+  if story
     if TCOD.console_is_key_pressed(TCOD::KEY_SPACE)
-      $overlays.clear
+      $overlays.select!{|o|not o.is_a?(Story)} #.clear
     end
     #@overlays[0]
   else
