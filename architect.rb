@@ -77,8 +77,8 @@ def place_objects(room, num_rooms)
   #choose random number of monsters
   num_monsters = TCOD.random_get_int(nil, 0, MAX_ROOM_MONSTERS)
   if num_rooms ==0
-    objects << object(room.center, :player)
-    objects << object(room.top_middle, :king)
+    objects << object(room.center, :player )
+    objects << object(room.top_middle, :king, :ally=>true)
   end
   num_monsters.times do
     trials=100

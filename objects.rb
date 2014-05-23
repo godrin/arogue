@@ -1,5 +1,5 @@
 
-Obj=Struct.new(:x, :y, :name, :char, :type, :color, :map, :block, :block_view, :hp)
+Obj=Struct.new(:x, :y, :name, :char, :type, :color, :map, :block, :block_view, :hp, :ally)
 class Obj
 
   def move (dx, dy)
@@ -16,7 +16,7 @@ module FightingObj
   end
 end
 
-def object(pos,type)
+def object(pos,type,attrs={})
   c=TCOD::Color
   d=Struct.new(:name, :tile, :color, :probability, :hp)
 
@@ -33,5 +33,12 @@ def object(pos,type)
   }
   t=t[type]
   
-  Obj.new(*pos, t.name, t.tile, type, t.color, nil, true, true)
+  o=Obj.new(*pos, t.name, t.tile, type, t.color, nil, true, true)
+
+  attrs.each{|k,v|
+    o.send(k.to_s+"=",v)
+  }
+
+
+  o
 end

@@ -96,12 +96,10 @@ class Story
   end
   def  draw
     TCOD.console_set_default_background($con, @bgColor)
-    TCOD.console_set_default_foreground($con, @titleColor)
     TCOD.console_rect($con,@r.x1,@r.y1,@r.w,@r.h,false,TCOD::BKGND_DARKEN)
 
-    $screen.rect_text(@title,@titleColor,*@r.xywh)
-    TCOD.console_set_default_foreground($con, @color)
-    TCOD.console_print_rect($con,*@r.shrink(1).xywh,@text)
+    $screen.rect_text(@title,@titleColor,nil,*@r.xywh)
+    $screen.rect_text(@text,@color,nil,*@r.shrink(1).xywh)
   end
 end
 
@@ -117,11 +115,13 @@ class ObjView
     TCOD.console_print_rect($con,*@r.xywh,text)
     TCOD.console_set_default_background($con, TCOD::Color::YELLOW)
     TCOD.console_rect($con,*@r.moved(0,1).xywh,false,TCOD::BKGND_SET)
+    
   end
 end
 
 class ObjPainter
 
+  # returns true if object was painted
   def draw(what)
     #only show if it's visible to the $player
     if TCOD.map_is_in_fov($fov_map, what.x, what.y)
@@ -130,6 +130,7 @@ class ObjPainter
       TCOD.console_put_char($con, what.x, what.y, what.char.ord, TCOD::BKGND_NONE)
       return true
     end
+    false
   end
 end
 
@@ -171,13 +172,18 @@ def render_all(map)
   end
 
   objPainter=ObjPainter.new
+  objDisplays=[]
+  py=6
 
   #draw all objects in the list
   $objects.each do |object|
-    objPainter.draw(object)
+    if objPainter.draw(object)
+      objDisplays<<ObjView.new(object,Pos.new(1,py))
+      py+=4
+    end
   end
 
-  $overlays.each do |overlay|
+  (objDisplays+$overlays).each do |overlay|
     overlay.draw
   end
 
@@ -251,7 +257,7 @@ $objects = mapInfo.objects
 $player=mapInfo.objects.find{|o|o.type==:player}
 #pp $player
 #exit
-$overlays = [$story, ObjView.new($player,Pos.new(3,10))]
+$overlays = [$story]
 
 
 #create the FOV $map, according to the generated $map
