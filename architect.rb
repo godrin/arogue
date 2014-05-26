@@ -79,7 +79,7 @@ def place_objects(room, num_rooms)
   if num_rooms ==0
     objects << object(room.center, :player )
     objects << object(room.top_middle, :king, :ally=>true)
-  end
+  else
   num_monsters.times do
     trials=100
     while trials>0
@@ -101,7 +101,7 @@ def place_objects(room, num_rooms)
       objects<<monster
     end
   end
-
+  end
 
   objects
 end

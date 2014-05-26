@@ -52,7 +52,7 @@ class Tile
   end
 
   def material
-     @block_sight ? :wall : :ground
+    @block_sight ? :wall : :ground
   end
 
   def tile
@@ -80,9 +80,9 @@ class Map
   end
   def blocked(x,y)
     self[x,y].blocked or begin
-      self.objects.find{|o|o.x==x and o.y==y and o.block }
-    end
+    self.objects.find{|o|o.x==x and o.y==y and o.block }
   end
+end
 end
 
 
@@ -116,16 +116,12 @@ def handle_keys(map)
     #movement keys
     if TCOD.console_is_key_pressed(TCOD::KEY_UP)
       player.move(0, -1)
-      $fov_recompute = true
     elsif TCOD.console_is_key_pressed(TCOD::KEY_DOWN)
       player.move(0, 1)
-      $fov_recompute = true
     elsif TCOD.console_is_key_pressed(TCOD::KEY_LEFT)
       player.move(-1, 0)
-      $fov_recompute = true
     elsif TCOD.console_is_key_pressed(TCOD::KEY_RIGHT)
       player.move(1, 0)
-      $fov_recompute = true
     end
   end
   false
@@ -137,7 +133,6 @@ end
 #############################################
 
 initDisplay
-#create object representing the $player
 
 $story = Story.new
 #the list of objects with just the $player
@@ -147,20 +142,10 @@ mapInfo = make_map
 $map=mapInfo
 $objects = mapInfo.objects
 $player=mapInfo.objects.find{|o|o.type==:player}
-#pp $player
-#exit
 $overlays = [$story]
 
 
-#create the FOV $map, according to the generated $map
-$fov_map = TCOD.map_new(MAP_WIDTH, MAP_HEIGHT)
-0.upto(MAP_HEIGHT-1) do |y|
-  0.upto(MAP_WIDTH-1) do |x|
-    TCOD.map_set_properties($fov_map, x, y, !$map[x,y].block_sight, !$map[x,y].blocked)
-  end
-end
-
-$fov_recompute = true
+initFovInit
 
 trap('SIGINT') { exit! }
 
@@ -168,8 +153,6 @@ until TCOD.console_is_window_closed()
 
   #render the screen
   render_all($map)
-
-  TCOD.console_flush()
 
   #handle keys and exit game if needed
   will_exit = handle_keys($map)
