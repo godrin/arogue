@@ -1,5 +1,5 @@
 
-class Story
+class StoryView
   def initialize
     @text=">>Yksjdhf sdfkjhsdf ksjfdh dsfkj hkjsdhf sdks sf <<"
     @title="King"

@@ -105,10 +105,10 @@ def handle_keys(map)
     return true  #exit game
   end
 
-  story=$overlays.find{|o|o.is_a?(Story)}
+  story=$overlays.find{|o|o.is_a?(StoryView)}
   if story
     if TCOD.console_is_key_pressed(TCOD::KEY_SPACE)
-      $overlays.select!{|o|not o.is_a?(Story)} #.clear
+      $overlays.select!{|o|not o.is_a?(StoryView)} #.clear
     end
     #@overlays[0]
   else
@@ -134,7 +134,7 @@ end
 
 initDisplay
 
-$story = Story.new
+$story = StoryView.new
 #the list of objects with just the $player
 
 #generate $map(at this point it's not drawn to the screen)
