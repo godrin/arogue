@@ -91,7 +91,6 @@ def place_objects(room, num_rooms)
     end
 
     if trials>0
-
       if TCOD.random_get_int(nil, 0, 100) < 80  #80% chance of getting an orc
         monster = object([x,y],:orc)
       else
@@ -108,7 +107,6 @@ end
 
 def make_map
   # fill map with "blocked" tiles
-  #map = [[0]*MAP_HEIGHT]*MAP_WIDTH
   map = []
   objects = []
 
@@ -156,10 +154,7 @@ def make_map
       new_x, new_y = new_room.center
 
 
-      if num_rooms == 0
-        #this.equal? the first room, where the $player starts at
-      #  objects << Obj.new(new_x, new_y, MAGE_TILE, :player, TCOD::Color::WHITE)
-      else
+      if num_rooms > 0
         #all rooms after the first
         #connect it to the previous room with a tunnel
 
