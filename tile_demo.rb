@@ -89,9 +89,6 @@ end
 class AI
 end
 
-
-
-
 def handle_keys(map)
   if REAL_TIME
     key = TCOD.console_check_for_keypress(TCOD::KEY_PRESSED)  #real-time
@@ -114,15 +111,42 @@ def handle_keys(map)
   else
     player=map.player
     #movement keys
-    if TCOD.console_is_key_pressed(TCOD::KEY_UP)
-      player.move(0, -1)
-    elsif TCOD.console_is_key_pressed(TCOD::KEY_DOWN)
-      player.move(0, 1)
-    elsif TCOD.console_is_key_pressed(TCOD::KEY_LEFT)
-      player.move(-1, 0)
-    elsif TCOD.console_is_key_pressed(TCOD::KEY_RIGHT)
-      player.move(1, 0)
+    # use from event
+    if key.pressed
+      case key.vk
+      when TCOD::KEY_UP, TCOD::KEY_KP8
+        player.move(0,-1)
+      when TCOD::KEY_DOWN, TCOD::KEY_KP2
+        player.move(0,1)
+      when TCOD::KEY_LEFT, TCOD::KEY_KP4
+        player.move(-1,0)
+      when TCOD::KEY_RIGHT, TCOD::KEY_KP6
+        player.move(1,0)
+      when TCOD::KEY_UP, TCOD::KEY_KP1
+        player.move(-1,1)
+      when TCOD::KEY_UP, TCOD::KEY_KP3
+        player.move(1,1)
+      when TCOD::KEY_UP, TCOD::KEY_KP7
+        player.move(-1,-1)
+      when TCOD::KEY_UP, TCOD::KEY_KP9
+        player.move(1,-1)
+      else
+        puts "UNKNOWN KEY #{key.vk}"
+      end
     end
+
+    # direct query
+    #
+    #
+    #    if TCOD.console_is_key_pressed(TCOD::KEY_UP) || 
+    #player.move(0, -1)
+    #elsif TCOD.console_is_key_pressed(TCOD::KEY_DOWN)
+    #  player.move(0, 1)
+    #elsif TCOD.console_is_key_pressed(TCOD::KEY_LEFT)
+    #  player.move(-1, 0)
+    #elsif TCOD.console_is_key_pressed(TCOD::KEY_RIGHT)
+    #  player.move(1, 0)
+    ##end
   end
   false
 end
