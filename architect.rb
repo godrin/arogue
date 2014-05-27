@@ -76,6 +76,13 @@ def place_objects(room, num_rooms, object_definition)
   objects = []
   #choose random number of monsters
   num_monsters = TCOD.random_get_int(nil, 0, MAX_ROOM_MONSTERS)
+
+  object_definition.each{|obj_def|
+    cond,action=obj_def
+    if cond==[num_rooms+1]
+      action.call(room)
+    end
+  }
   if num_rooms ==0
     objects << object(room.center, :player )
     objects << object(room.top_middle, :king, :ally=>true)

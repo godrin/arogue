@@ -40,9 +40,17 @@ def actionLog(text)
   }
 end
 
+def place(what,where=nil,args={})
+  lambda{|room|
+    pos=where || :anywhere
+    object(room.call(pos), what,args )
+  }
+end
+
 $architect=[
-  [room(1),:king],
-  [room(2),:sword]
+  [room(1),place(:place,:center)],
+  [room(1),place(:king,:top_middle,{:ally=>true})],
+  [room(2),place(:sword)]
 ]
 
 $storyLine=[
