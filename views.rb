@@ -1,9 +1,9 @@
 
 class StoryView
-  def initialize
-    @text=">>Yksjdhf sdfkjhsdf ksjfdh dsfkj hkjsdhf sdks sf <<"
-    @title="King"
-    @r=Rect.new(5,2,30,4)
+  def initialize(who=nil,text=nil)
+    @text=text||">>Yksjdhf sdfkjhsdf ksjfdh dsfkj hkjsdhf sdks sf <<"
+    @title=who||"King"
+    @r=Rect.new(5,2,55,4)
     #@r=Rect.new(0,0,SCREEN_WIDTH,SCREEN_HEIGHT) #:5,2,30,4)
     @color=TCOD::Color.rgb(150,150,150)
     @bgColor=TCOD::Color.rgb(20,20,20)

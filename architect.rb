@@ -72,7 +72,7 @@ def create_v_tunnel(map,y1, y2, x)
   end
 end
 
-def place_objects(room, num_rooms)
+def place_objects(room, num_rooms, object_definition)
   objects = []
   #choose random number of monsters
   num_monsters = TCOD.random_get_int(nil, 0, MAX_ROOM_MONSTERS)
@@ -147,7 +147,7 @@ def make_map
       #"paint" it to the map's tiles
       create_room(map,new_room)
 
-      objects<<place_objects( new_room, num_rooms)
+      objects<<place_objects( new_room, num_rooms, $architect)
       objects.flatten!
 
       #center coordinates of new room, will be useful later
@@ -179,7 +179,6 @@ def make_map
     end
   end
   map=Map.new(map, objects)
-  objects.each{|o|o.map=map}
 
   map
 end

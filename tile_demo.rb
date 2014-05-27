@@ -5,6 +5,7 @@ require_relative './colors.rb'
 require_relative './architect.rb'
 require_relative './screen.rb'
 require_relative './views.rb'
+require_relative './event.rb'
 
 #actual size of the window
 SCREEN_WIDTH = 80
@@ -72,17 +73,50 @@ class Tile
 end
 
 class Map
-  def [](x,y)
-    self.map[x][y]
+  @@obj_fov_map = TCOD.map_new(MAP_WIDTH, MAP_HEIGHT)
+
+  def [](x,y=nil)
+    if x.is_a?(Symbol)
+      super(x)
+    else
+      self.map[x][y]
+    end
   end
   def player
     @player||=objects.find{|o|o.type==:player}
   end
   def blocked(x,y)
-    self[x,y].blocked or begin
-    self.objects.find{|o|o.x==x and o.y==y and o.block }
+    blockedBy=[]
+    blockedBy << :wall if self[x,y].blocked
+    blockedBy+= self.objects.select{|o|o.x==x and o.y==y and o.block }
+    if blockedBy.empty? 
+      nil 
+    else
+      blockedBy
+    end
   end
-end
+  def updateBlockingFovs(map=$map)
+    0.upto(MAP_HEIGHT-1) do |y|
+      0.upto(MAP_WIDTH-1) do |x|
+        TCOD.map_set_properties(@@obj_fov_map, x, y, !map[x,y].block_sight, !map[x,y].blocked)
+      end
+    end
+  end
+  def computeFovsForObjects
+
+    updateBlockingFovs(self)
+    self.objects.each{|o|
+      TCOD.map_compute_fov($fov_map, o.x, o.y, TORCH_RADIUS, FOV_LIGHT_WALLS, FOV_ALGO)
+      seesOld=o.sees||[]
+      o.sees=(self.objects-[o]).select{|o2| TCOD.map_is_in_fov($fov_map, o2.x, o2.y) }
+      (seesOld-o.sees).each{|vanishedObject|
+        $events<<[o,:noLongerSees,vanishedObject]
+      }
+      (o.sees-seesOld).each{|newObject|
+        $events<<[o,:nowSees,newObject]
+      }
+    }
+  end
 end
 
 
@@ -115,40 +149,48 @@ def handle_keys(map)
     if key.pressed
       case key.vk
       when TCOD::KEY_UP, TCOD::KEY_KP8
-        player.move(0,-1)
+        player.move(map, 0,-1)
       when TCOD::KEY_DOWN, TCOD::KEY_KP2
-        player.move(0,1)
+        player.move(map,0,1)
       when TCOD::KEY_LEFT, TCOD::KEY_KP4
-        player.move(-1,0)
+        player.move(map,-1,0)
       when TCOD::KEY_RIGHT, TCOD::KEY_KP6
-        player.move(1,0)
+        player.move(map,1,0)
       when TCOD::KEY_UP, TCOD::KEY_KP1
-        player.move(-1,1)
+        player.move(map,-1,1)
       when TCOD::KEY_UP, TCOD::KEY_KP3
-        player.move(1,1)
+        player.move(map,1,1)
       when TCOD::KEY_UP, TCOD::KEY_KP7
-        player.move(-1,-1)
+        player.move(map,-1,-1)
       when TCOD::KEY_UP, TCOD::KEY_KP9
-        player.move(1,-1)
+        player.move(map,1,-1)
       else
         puts "UNKNOWN KEY #{key.vk}"
       end
     end
 
-    # direct query
-    #
-    #
-    #    if TCOD.console_is_key_pressed(TCOD::KEY_UP) || 
-    #player.move(0, -1)
-    #elsif TCOD.console_is_key_pressed(TCOD::KEY_DOWN)
-    #  player.move(0, 1)
-    #elsif TCOD.console_is_key_pressed(TCOD::KEY_LEFT)
-    #  player.move(-1, 0)
-    #elsif TCOD.console_is_key_pressed(TCOD::KEY_RIGHT)
-    #  player.move(1, 0)
-    ##end
   end
   false
+end
+
+def progressStory
+  pp "PROG"
+  $map.computeFovsForObjects
+  #  pp $map.objects[0].sees.map{|o|o.type}
+
+  $events.each{|ev|
+    $storyLine.each{|rule|
+      if rule[0].call(ev)
+        rule[1].call
+        #puts "RULE MATCH"
+      end
+
+    }
+
+  }
+
+  $events=[]
+
 end
 
 
@@ -166,15 +208,18 @@ mapInfo = make_map
 $map=mapInfo
 $objects = mapInfo.objects
 $player=mapInfo.objects.find{|o|o.type==:player}
-$overlays = [$story]
-
+$overlays = [] #$story]
+$events= []
 
 initFovInit
 
 trap('SIGINT') { exit! }
 
-until TCOD.console_is_window_closed()
+$events << [:player, :enters, :level, 0]
 
+until TCOD.console_is_window_closed()
+  progressStory
+  
   #render the screen
   render_all($map)
 
