@@ -20,7 +20,7 @@ class Rect
     [center_x, center_y]
   end
   def anywhere
-    [@x1+rand(w),@y1+rand(h)]
+    [@x1+rand(w-1)+1,@y1+rand(h-1)+1]
   end
   def top_middle
     [(@x1+@x2)/2,@y1+1]
@@ -46,6 +46,22 @@ class Rect
   def xywh
     [@x1,@y1,w,h]
   end
+
+  def each
+    (@x1..@x2).each{|x|
+      (@y1..@y2).each{|y|
+        yield x,y
+      }
+    }
+  end
+end
+
+def make_free(map,rect)
+  rect.each{|x,y|
+    cell=map[x][y]
+    cell.blocked = false
+    cell.block_sight = false
+  }
 end
 
 def create_room(map,room)
@@ -139,7 +155,7 @@ def make_map
       #this means there are no intersections, so this room.equal? valid
 
       #"paint" it to the map's tiles
-      create_room(map,new_room)
+      make_free(map,new_room)
 
       objects<<place_objects( new_room, num_rooms, $architect)
       objects.flatten!
@@ -172,8 +188,6 @@ def make_map
       num_rooms += 1
     end
   end
-  map=Map.new(map, objects)
-
-  map
+  Map.new(map, objects)
 end
 

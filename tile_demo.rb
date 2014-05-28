@@ -211,7 +211,7 @@ $player=mapInfo.objects.find{|o|o.type==:player}
 $overlays = [] #$story]
 $events= []
 
-initFovInit
+mapView=MapView.new(mapInfo)
 
 trap('SIGINT') { exit! }
 
@@ -221,7 +221,7 @@ until TCOD.console_is_window_closed()
   progressStory
   
   #render the screen
-  render_all($map)
+  render_all($map, mapView)
 
   #handle keys and exit game if needed
   will_exit = handle_keys($map)

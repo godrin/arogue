@@ -31,16 +31,16 @@ class ObjNameView
     TCOD.console_print_rect($con,*@r.xywh,text)
     TCOD.console_set_default_background($con, TCOD::Color::DARK_BLUE)
     TCOD.console_rect($con,*@r.moved(0,1).xywh,false,TCOD::BKGND_SET)
-    
+
   end
 end
 
 class ObjPainter
 
   # returns true if object was painted
-  def draw(what)
+  def draw(what, mapView)
     #only show if it's visible to the $player
-    if TCOD.map_is_in_fov($fov_map, what.x, what.y)
+    if TCOD.map_is_in_fov(mapView.fov_map, what.x, what.y)
       #set the color and then draw the character that represents this object at its position
       TCOD.console_set_default_foreground($con, what.color)
       TCOD.console_put_char($con, what.x, what.y, what.char.ord, TCOD::BKGND_NONE)
@@ -50,16 +50,28 @@ class ObjPainter
   end
 end
 
-def render_all(map)
-  if $fov_recompute or true
-    #recompute FOV if needed(the $player moved or something)
-    $fov_recompute = false
-    TCOD.map_compute_fov($fov_map, map.player.x, map.player.y, TORCH_RADIUS, FOV_LIGHT_WALLS, FOV_ALGO)
+class MapView
+  attr_reader :fov_map
+  def initialize(map)
+    initFovInit(map)
+
+  end
+  def initFovInit(map)
+    #create the FOV $map, according to the generated $map
+    @fov_map = TCOD.map_new(MAP_WIDTH, MAP_HEIGHT)
+    0.upto(MAP_HEIGHT-1) do |y|
+      0.upto(MAP_WIDTH-1) do |x|
+        TCOD.map_set_properties(@fov_map, x, y, !map[x,y].block_sight, !map[x,y].blocked)
+      end
+    end
+  end
+  def draw(map)
+    TCOD.map_compute_fov(@fov_map, map.player.x, map.player.y, TORCH_RADIUS, FOV_LIGHT_WALLS, FOV_ALGO)
 
     #go through all tiles, and set their background color according to the FOV
     0.upto(MAP_HEIGHT-1) do |y|
       0.upto(MAP_WIDTH-1) do |x|
-        visible = TCOD.map_is_in_fov($fov_map, x, y)
+        visible = TCOD.map_is_in_fov(@fov_map, x, y)
         cell = map[x,y]
         fgColor=cell.fgColor
         bgColor=cell.bgColor
@@ -81,20 +93,29 @@ def render_all(map)
       end
     end
   end
+end
+
+def render_all(map,mapView)
+
+  #mapView=MapView.new
+  mapView.draw(map)
 
   objPainter=ObjPainter.new
   objDisplays=[]
   py=6
 
   #draw all objects in the list
-  $objects.each do |object|
-    if objPainter.draw(object)
+
+  drawer=lambda{|object|
+    if objPainter.draw(object, mapView)
       objDisplays<<ObjNameView.new(object,Pos.new(1,py))
       py+=4
     end
-  end
+  }
+  $objects.select{|o|not o.block}.each(&drawer)
+  $objects.select{|o|o.block}.each(&drawer)
 
-  (objDisplays+$overlays).each do |overlay|
+  (objDisplays+$overlays).reverse.each do |overlay|
     overlay.draw
   end
 
@@ -116,15 +137,3 @@ def initDisplay
 
 end
 
-def initFovInit
-#create the FOV $map, according to the generated $map
-$fov_map = TCOD.map_new(MAP_WIDTH, MAP_HEIGHT)
-0.upto(MAP_HEIGHT-1) do |y|
-  0.upto(MAP_WIDTH-1) do |x|
-    TCOD.map_set_properties($fov_map, x, y, !$map[x,y].block_sight, !$map[x,y].blocked)
-  end
-end
-
-$fov_recompute = true
-
-end
