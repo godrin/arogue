@@ -1,7 +1,7 @@
 Event=Struct.new(:name,:data)
 
-def room(*args)
-  args
+def room(no)
+  no
 end
 
 def event(*args)
@@ -43,14 +43,15 @@ end
 def place(what,where=nil,args={})
   lambda{|room|
     pos=where || :anywhere
-    object(room.call(pos), what,args )
+    object(room.send(pos), what,args )
   }
 end
 
 $architect=[
-  [room(1),place(:place,:center)],
-  [room(1),place(:king,:top_middle,{:ally=>true})],
-  [room(2),place(:sword)]
+  [room(1),1,place(:player,:center)],
+  [room(1),1,place(:king,:top_middle,{:ally=>true})],
+  [room(3),1,place(:sword)],
+  [room(5..10),0.3,place(:troll)]
 ]
 
 $storyLine=[

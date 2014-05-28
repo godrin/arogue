@@ -19,6 +19,9 @@ class Rect
     center_y = (@y1 + @y2) / 2
     [center_x, center_y]
   end
+  def anywhere
+    [@x1+rand(w),@y1+rand(h)]
+  end
   def top_middle
     [(@x1+@x2)/2,@y1+1]
   end
@@ -78,36 +81,20 @@ def place_objects(room, num_rooms, object_definition)
   num_monsters = TCOD.random_get_int(nil, 0, MAX_ROOM_MONSTERS)
 
   object_definition.each{|obj_def|
-    cond,action=obj_def
-    if cond==[num_rooms+1]
-      action.call(room)
+    cond,probability,action=obj_def
+    if rand<probability
+      case num_rooms
+      when cond
+        1.upto(100) do
+          obj = action.call(room)
+          unless objects.find{|o|o.x==obj.x and o.y==obj.y}
+            objects << obj
+            break
+          end
+        end
+      end
     end
   }
-  if num_rooms ==0
-    objects << object(room.center, :player )
-    objects << object(room.top_middle, :king, :ally=>true)
-  else
-  num_monsters.times do
-    trials=100
-    while trials>0
-      #choose random spot for this monster
-      x = TCOD.random_get_int(nil, room.x1 + 1, room.x2-1)
-      y = TCOD.random_get_int(nil, room.y1 + 1, room.y2-1)
-      trials-=1
-      break unless objects.find{|o|o.x==x and o.y==y}
-    end
-
-    if trials>0
-      if TCOD.random_get_int(nil, 0, 100) < 80  #80% chance of getting an orc
-        monster = object([x,y],:orc)
-      else
-        monster = object([x,y],:troll)
-      end
-
-      objects<<monster
-    end
-  end
-  end
 
   objects
 end

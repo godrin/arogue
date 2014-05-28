@@ -44,7 +44,7 @@ def object(pos,type,attrs={})
     t[x.name.downcase.to_sym]=x
   }
   t=t[type]
-
+  puts "CREATE #{type}"
   o=Obj.new(*pos, t.name, t.tile, type, t.color, true, true, [])
 
   attrs.each{|k,v|
