@@ -37,17 +37,6 @@ end
 
 class ObjPainter
 
-  # returns true if object was painted
-  def draw(what, mapView)
-    #only show if it's visible to the $player
-    if TCOD.map_is_in_fov(mapView.fov_map, what.x, what.y)
-      #set the color and then draw the character that represents this object at its position
-      TCOD.console_set_default_foreground($con, what.color)
-      TCOD.console_put_char($con, what.x, what.y, what.char.ord, TCOD::BKGND_NONE)
-      return true
-    end
-    false
-  end
 end
 
 class MapView
@@ -65,7 +54,7 @@ class MapView
       end
     end
   end
-  def draw(map)
+  def drawMap(map)
     TCOD.map_compute_fov(@fov_map, map.player.x, map.player.y, TORCH_RADIUS, FOV_LIGHT_WALLS, FOV_ALGO)
 
     #go through all tiles, and set their background color according to the FOV
@@ -93,21 +82,30 @@ class MapView
       end
     end
   end
+  # returns true if object was painted
+  def drawObject(what)
+    #only show if it's visible to the $player
+    if TCOD.map_is_in_fov(mapView.fov_map, what.x, what.y)
+      #set the color and then draw the character that represents this object at its position
+      TCOD.console_set_default_foreground($con, what.color)
+      TCOD.console_put_char($con, what.x, what.y, what.char.ord, TCOD::BKGND_NONE)
+      return true
+    end
+    false
+  end
 end
 
 def render_all(map,mapView)
 
-  #mapView=MapView.new
-  mapView.draw(map)
+  mapView.drawMap(map)
 
-  objPainter=ObjPainter.new
   objDisplays=[]
   py=6
 
   #draw all objects in the list
 
   drawer=lambda{|object|
-    if objPainter.draw(object, mapView)
+    if mapView.drawObject(object)
       objDisplays<<ObjNameView.new(object,Pos.new(1,py))
       py+=4
     end
@@ -125,7 +123,6 @@ def render_all(map,mapView)
 end
 
 def initDisplay
-
   #note that we must specify the number of tiles on the font, which was enlarged a bit
   TCOD.console_set_custom_font(File.join(File.dirname(__FILE__), 'font','font-11.png'), TCOD::FONT_TYPE_GREYSCALE | TCOD::FONT_LAYOUT_TCOD, 16, 16)
   TCOD.console_init_root(SCREEN_WIDTH, SCREEN_HEIGHT, 'story roguelike', false, TCOD::RENDERER_SDL)
@@ -134,6 +131,5 @@ def initDisplay
   $screen = Screen.new($con)
 
   TCOD.console_map_ascii_codes_to_font(0, 255, 0, 0) 
-
 end
 
