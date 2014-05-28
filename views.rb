@@ -85,7 +85,7 @@ class MapView
   # returns true if object was painted
   def drawObject(what)
     #only show if it's visible to the $player
-    if TCOD.map_is_in_fov(mapView.fov_map, what.x, what.y)
+    if TCOD.map_is_in_fov(@fov_map, what.x, what.y)
       #set the color and then draw the character that represents this object at its position
       TCOD.console_set_default_foreground($con, what.color)
       TCOD.console_put_char($con, what.x, what.y, what.char.ord, TCOD::BKGND_NONE)
