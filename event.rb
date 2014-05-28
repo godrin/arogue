@@ -50,7 +50,7 @@ end
 $architect=[
   [room(1),1,place(:player,:center)],
   [room(1),1,place(:king,:top_middle,{:ally=>true})],
-  [room(3),1,place(:sword)],
+  [room(2),1,place(:sword)],
   [room(5..10),0.3,place(:troll)]
 ]
 
