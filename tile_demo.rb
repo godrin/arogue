@@ -211,7 +211,7 @@ $player=mapInfo.objects.find{|o|o.type==:player}
 $overlays = [] #$story]
 $events= []
 
-mapView=MapView.new(mapInfo)
+mapView=MapView.new(mapInfo, Rect.new(20,0,SCREEN_WIDTH-20,SCREEN_HEIGHT))
 
 trap('SIGINT') { exit! }
 
@@ -230,3 +230,4 @@ end
 # hard exit, because it hangs otherwise
 TCOD.console_set_fullscreen(false)
 exit!
+

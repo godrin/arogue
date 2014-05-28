@@ -1,8 +1,13 @@
 require_relative './objects.rb'
 
-Map=Struct.new(:map,:objects)
+Map=Struct.new(:map,:objects, :rect)
 
 Pos=Struct.new(:x,:y)
+class Pos
+  def -(p)
+    Pos.new(self.x-p.x,self.y-p.y)
+  end
+end
 
 class Rect
   attr_accessor :x1, :y1, :x2, :y2
@@ -17,13 +22,13 @@ class Rect
   def center
     center_x = (@x1 + @x2) / 2
     center_y = (@y1 + @y2) / 2
-    [center_x, center_y]
+    Pos.new(center_x, center_y)
   end
   def anywhere
-    [@x1+rand(w-1)+1,@y1+rand(h-1)+1]
+    Pos.new(@x1+rand(w-1)+1,@y1+rand(h-1)+1)
   end
   def top_middle
-    [(@x1+@x2)/2,@y1+1]
+    Pos.new((@x1+@x2)/2,@y1+1)
   end
   def shrink(d)
     Rect.new(x1+d,y1+d,w-2*d,h-2*d)
@@ -120,6 +125,8 @@ def make_map
   map = []
   objects = []
 
+  mapRect=Rect.new(0,0,MAP_WIDTH,MAP_HEIGHT)
+
   0.upto(MAP_WIDTH-1) do |x|
     map.push([])
     0.upto(MAP_HEIGHT-1) do |y|
@@ -161,7 +168,7 @@ def make_map
       objects.flatten!
 
       #center coordinates of new room, will be useful later
-      new_x, new_y = new_room.center
+      new_x, new_y = *new_room.center
 
 
       if num_rooms > 0
@@ -169,7 +176,7 @@ def make_map
         #connect it to the previous room with a tunnel
 
         #center coordinates of previous room
-        prev_x, prev_y = rooms[num_rooms-1].center()
+        prev_x, prev_y = *rooms[num_rooms-1].center()
 
         #draw a coin(random number that.equal? either 0 or 1)
         if TCOD.random_get_int(nil, 0, 1) == 1
@@ -188,6 +195,6 @@ def make_map
       num_rooms += 1
     end
   end
-  Map.new(map, objects)
+  Map.new(map, objects, mapRect)
 end
 

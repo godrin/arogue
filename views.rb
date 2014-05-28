@@ -41,8 +41,9 @@ end
 
 class MapView
   attr_reader :fov_map
-  def initialize(map)
+  def initialize(map, win)
     initFovInit(map)
+    @window=win
 
   end
   def initFovInit(map)
@@ -58,6 +59,14 @@ class MapView
     TCOD.map_compute_fov(@fov_map, map.player.x, map.player.y, TORCH_RADIUS, FOV_LIGHT_WALLS, FOV_ALGO)
 
     #go through all tiles, and set their background color according to the FOV
+    
+ 
+    middle=@window.center-map.rect.center
+    pp "MIDDLE",middle,@window.center
+    @window.each{|x,y|
+
+
+    }
     0.upto(MAP_HEIGHT-1) do |y|
       0.upto(MAP_WIDTH-1) do |x|
         visible = TCOD.map_is_in_fov(@fov_map, x, y)
