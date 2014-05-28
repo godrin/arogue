@@ -174,9 +174,7 @@ def handle_keys(map)
 end
 
 def progressStory
-  pp "PROG"
   $map.computeFovsForObjects
-  #  pp $map.objects[0].sees.map{|o|o.type}
 
   $events.each{|ev|
     $storyLine.each{|rule|
@@ -184,9 +182,7 @@ def progressStory
         rule[1].call
         #puts "RULE MATCH"
       end
-
     }
-
   }
 
   $events=[]

@@ -64,7 +64,7 @@ class MapView
     middle=@window.center-map.rect.center
     pp "MIDDLE",middle,@window.center
     @window.each{|x,y|
-
+       
 
     }
     0.upto(MAP_HEIGHT-1) do |y|
@@ -112,7 +112,6 @@ def render_all(map,mapView)
   py=6
 
   #draw all objects in the list
-
   drawer=lambda{|object|
     if mapView.drawObject(object)
       objDisplays<<ObjNameView.new(object,Pos.new(1,py))

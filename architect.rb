@@ -55,7 +55,7 @@ class Rect
   def each
     (@x1..@x2).each{|x|
       (@y1..@y2).each{|y|
-        yield x,y
+        yield Pos.new(x,y)
       }
     }
   end
