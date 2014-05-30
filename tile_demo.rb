@@ -12,7 +12,7 @@ SCREEN_WIDTH = 80
 SCREEN_HEIGHT = 30
 
 #size of the $map
-MAP_WIDTH = SCREEN_WIDTH
+MAP_WIDTH = SCREEN_WIDTH - 20
 MAP_HEIGHT = SCREEN_HEIGHT
 MAX_ROOM_MONSTERS = 3
 #parameters for dungeon generator
@@ -86,6 +86,9 @@ class Map
     @player||=objects.find{|o|o.type==:player}
   end
   def blocked(x,y)
+    unless self.rect.contains(Pos.new(x,y))
+      return [:wall]
+    end
     blockedBy=[]
     blockedBy << :wall if self[x,y].blocked
     blockedBy+= self.objects.select{|o|o.x==x and o.y==y and o.block }
@@ -207,7 +210,7 @@ $player=mapInfo.objects.find{|o|o.type==:player}
 $overlays = [] #$story]
 $events= []
 
-mapView=MapView.new(mapInfo, Rect.new(20,0,SCREEN_WIDTH-20,SCREEN_HEIGHT))
+mapView=MapView.new(mapInfo, Rect.new(20,0,SCREEN_WIDTH-21,SCREEN_HEIGHT-1))
 
 trap('SIGINT') { exit! }
 

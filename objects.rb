@@ -1,7 +1,9 @@
 
 Obj=Struct.new(:x, :y, :name, :char, :type, :color, :block, :block_view, :hp, :ally, :sees, :stackable)
 class Obj
-
+  def pos
+    Pos.new(self.x, self.y)
+  end
   def move (map, dx, dy)
     #move by the given amount, if the destination.equal? not blocked
     blocked=map.blocked(self.x + dx,self.y + dy)

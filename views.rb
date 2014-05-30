@@ -55,49 +55,87 @@ class MapView
       end
     end
   end
+
+
+  def getMiddle(map)
+     @window.center-map.player.pos
+  end
+
   def drawMap(map)
     TCOD.map_compute_fov(@fov_map, map.player.x, map.player.y, TORCH_RADIUS, FOV_LIGHT_WALLS, FOV_ALGO)
 
     #go through all tiles, and set their background color according to the FOV
-    
- 
-    middle=@window.center-map.rect.center
-    pp "MIDDLE",middle,@window.center
-    @window.each{|x,y|
-       
+    if true
+    #  @window.topleft+
+     middle=getMiddle(map) #   @window.center-map.player.pos
+   #   middle=@window.topleft-map.rect.topleft
+      pp "MIDDLE",middle,@window.center
+      @window.each{|winPos|
+        mapPos=winPos-middle
+        if map.rect.contains(mapPos)
+          visible = TCOD.map_is_in_fov(@fov_map, *mapPos)
+          cell = map[*mapPos]
+          pp mapPos unless cell
+          fgColor=cell.fgColor
+          bgColor=cell.bgColor
 
-    }
-    0.upto(MAP_HEIGHT-1) do |y|
-      0.upto(MAP_WIDTH-1) do |x|
-        visible = TCOD.map_is_in_fov(@fov_map, x, y)
-        cell = map[x,y]
-        fgColor=cell.fgColor
-        bgColor=cell.bgColor
-
-        explored=map[x,y].explored
-        if visible or explored 
-          if not visible
-            fgColor=fgColor*0.5
-            bgColor=bgColor*0.5
+          explored=cell.explored
+          if visible or explored 
+            if not visible
+              fgColor=fgColor*0.5
+              bgColor=bgColor*0.5
+            else
+              cell.explored = true
+            end
+            TCOD.console_put_char_ex($con, *winPos, cell.char.ord, fgColor, bgColor )
           else
-            map[x,y].explored = true
+            fgColor=bgColor=TCOD::Color::BLACK
+            c=" "
+            TCOD.console_put_char_ex($con, *winPos, c.ord, fgColor, bgColor )
           end
-          TCOD.console_put_char_ex($con, x, y, cell.char.ord, fgColor, bgColor )
         else
           fgColor=bgColor=TCOD::Color::BLACK
-          c=" "
-          TCOD.console_put_char_ex($con, x, y, c.ord, fgColor, bgColor )
+            TCOD.console_put_char_ex($con, *winPos, ' '.ord, fgColor, bgColor )
+
+        end
+
+      }
+    else
+      0.upto(MAP_HEIGHT-1) do |y|
+        0.upto(MAP_WIDTH-1) do |x|
+          visible = TCOD.map_is_in_fov(@fov_map, x, y)
+          cell = map[x,y]
+          fgColor=cell.fgColor
+          bgColor=cell.bgColor
+
+          explored=map[x,y].explored
+          if visible or explored 
+            if not visible
+              fgColor=fgColor*0.5
+              bgColor=bgColor*0.5
+            else
+              map[x,y].explored = true
+            end
+            TCOD.console_put_char_ex($con, x, y, cell.char.ord, fgColor, bgColor )
+          else
+            fgColor=bgColor=TCOD::Color::BLACK
+            c=" "
+            TCOD.console_put_char_ex($con, x, y, c.ord, fgColor, bgColor )
+          end
         end
       end
     end
   end
   # returns true if object was painted
-  def drawObject(what)
+  def drawObject(map,what)
+    middle=getMiddle(map) #@window.topleft-map.rect.topleft
+    pp "MIDDLE",middle
+    winPos=what.pos+middle
     #only show if it's visible to the $player
     if TCOD.map_is_in_fov(@fov_map, what.x, what.y)
       #set the color and then draw the character that represents this object at its position
       TCOD.console_set_default_foreground($con, what.color)
-      TCOD.console_put_char($con, what.x, what.y, what.char.ord, TCOD::BKGND_NONE)
+      TCOD.console_put_char($con, *winPos, what.char.ord, TCOD::BKGND_NONE)
       return true
     end
     false
@@ -113,7 +151,7 @@ def render_all(map,mapView)
 
   #draw all objects in the list
   drawer=lambda{|object|
-    if mapView.drawObject(object)
+    if mapView.drawObject(map, object)
       objDisplays<<ObjNameView.new(object,Pos.new(1,py))
       py+=4
     end

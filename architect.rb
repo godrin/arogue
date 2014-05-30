@@ -4,6 +4,9 @@ Map=Struct.new(:map,:objects, :rect)
 
 Pos=Struct.new(:x,:y)
 class Pos
+  def +(p)
+    Pos.new(self.x+p.x,self.y+p.y)
+  end
   def -(p)
     Pos.new(self.x-p.x,self.y-p.y)
   end
@@ -17,6 +20,10 @@ class Rect
     @y1 = y
     @x2 = x + w
     @y2 = y + h
+  end
+
+  def topleft
+    Pos.new(@x1,@y1)
   end
  
   def center
@@ -35,6 +42,9 @@ class Rect
   end
   def moved(x,y)
     Rect.new(x1+x,y1+y,w,h)
+  end
+  def contains(pos)
+    @x1<=pos.x and @x2>pos.x and @y1<=pos.y and @y2>pos.y
   end
  
   def intersect (other)
@@ -62,7 +72,8 @@ class Rect
 end
 
 def make_free(map,rect)
-  rect.each{|x,y|
+  rect.each{|p|
+    x,y=*p
     cell=map[x][y]
     cell.blocked = false
     cell.block_sight = false
@@ -142,8 +153,8 @@ def make_map
     w = TCOD.random_get_int(nil, ROOM_MIN_SIZE, ROOM_MAX_SIZE)
     h = TCOD.random_get_int(nil, ROOM_MIN_SIZE, ROOM_MAX_SIZE)
     #random position without going out of the boundaries of the map
-    x = TCOD.random_get_int(nil, 0, MAP_WIDTH - w - 1)
-    y = TCOD.random_get_int(nil, 0, MAP_HEIGHT - h - 1)
+    x = TCOD.random_get_int(nil, 1, MAP_WIDTH - w - 1)
+    y = TCOD.random_get_int(nil, 1, MAP_HEIGHT - h - 1)
 
 
     #"Rect" class makes rectangles easier to work with
