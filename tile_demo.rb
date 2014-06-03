@@ -109,9 +109,9 @@ class Map
 
     updateBlockingFovs(self)
     self.objects.each{|o|
-      TCOD.map_compute_fov($fov_map, o.x, o.y, TORCH_RADIUS, FOV_LIGHT_WALLS, FOV_ALGO)
+      TCOD.map_compute_fov(@@obj_fov_map, o.x, o.y, TORCH_RADIUS, FOV_LIGHT_WALLS, FOV_ALGO)
       seesOld=o.sees||[]
-      o.sees=(self.objects-[o]).select{|o2| TCOD.map_is_in_fov($fov_map, o2.x, o2.y) }
+      o.sees=(self.objects-[o]).select{|o2| TCOD.map_is_in_fov(@@obj_fov_map, o2.x, o2.y) }
       (seesOld-o.sees).each{|vanishedObject|
         $events<<[o,:noLongerSees,vanishedObject]
       }
@@ -178,7 +178,6 @@ end
 
 def progressStory
   $map.computeFovsForObjects
-
   $events.each{|ev|
     $storyLine.each{|rule|
       if rule[0].call(ev)
