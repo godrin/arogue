@@ -98,6 +98,13 @@ class Map
       blockedBy
     end
   end
+  def objects(x=nil,y=nil)
+    if x.nil? and y.nil?
+      self[:objects]
+    else
+      self[:objects].select{|o|o.x==x and o.y==y}
+    end
+  end
   def updateBlockingFovs(map=$map)
     0.upto(MAP_HEIGHT-1) do |y|
       0.upto(MAP_WIDTH-1) do |x|
@@ -170,6 +177,7 @@ def handle_keys(map)
       else
         puts "UNKNOWN KEY #{key.vk}"
       end
+      player.pickup(map)
     end
 
   end
@@ -217,7 +225,7 @@ $events << [:player, :enters, :level, 0]
 
 until TCOD.console_is_window_closed()
   progressStory
-  
+
   #render the screen
   render_all($map, mapView)
 
