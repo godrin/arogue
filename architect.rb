@@ -153,8 +153,8 @@ def make_map
     w = TCOD.random_get_int(nil, ROOM_MIN_SIZE, ROOM_MAX_SIZE)
     h = TCOD.random_get_int(nil, ROOM_MIN_SIZE, ROOM_MAX_SIZE)
     #random position without going out of the boundaries of the map
-    x = TCOD.random_get_int(nil, 1, MAP_WIDTH - w - 1)
-    y = TCOD.random_get_int(nil, 1, MAP_HEIGHT - h - 1)
+    x = TCOD.random_get_int(nil, 1, MAP_WIDTH - w - 2)
+    y = TCOD.random_get_int(nil, 1, MAP_HEIGHT - h - 2)
 
 
     #"Rect" class makes rectangles easier to work with
