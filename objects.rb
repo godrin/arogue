@@ -46,6 +46,7 @@ def object(pos,type,attrs={})
     d.new('Player', '@',c::WHITE, 0, 20, false, true),
     d.new('Orc', 'o', c::DESATURATED_GREEN, 0.8, 5, false, false),
     d.new('Troll', 'T', c::DARKER_GREEN, 1, 10, false, false),
+    d.new('Guard', 'G', c::YELLOW, 0, 60, false, true),
   ]
 
   t={}
@@ -60,7 +61,6 @@ def object(pos,type,attrs={})
   attrs.each{|k,v|
     o.send(k.to_s+"=",v)
   }
-
 
   o
 end

@@ -58,7 +58,7 @@ class MapView
 
 
   def getMiddle(map)
-     @window.center-map.player.pos
+    @window.center-map.player.pos
   end
 
   def drawMap(map)
@@ -66,9 +66,9 @@ class MapView
 
     #go through all tiles, and set their background color according to the FOV
     if true
-    #  @window.topleft+
-     middle=getMiddle(map) #   @window.center-map.player.pos
-   #   middle=@window.topleft-map.rect.topleft
+      #  @window.topleft+
+      middle=getMiddle(map) #   @window.center-map.player.pos
+      #   middle=@window.topleft-map.rect.topleft
       #pp "MIDDLE",middle,@window.center
       @window.each{|winPos|
         mapPos=winPos-middle
@@ -95,8 +95,7 @@ class MapView
           end
         else
           fgColor=bgColor=TCOD::Color::BLACK
-            TCOD.console_put_char_ex($con, *winPos, ' '.ord, fgColor, bgColor )
-
+          TCOD.console_put_char_ex($con, *winPos, ' '.ord, fgColor, bgColor )
         end
 
       }

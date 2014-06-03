@@ -37,6 +37,12 @@ class Rect
   def top_middle
     Pos.new((@x1+@x2)/2,@y1+1)
   end
+  def top_left
+    Pos.new(@x1,@y1)
+  end
+  def top_right
+    Pos.new(@x2,@y1)
+  end
   def shrink(d)
     Rect.new(x1+d,y1+d,w-2*d,h-2*d)
   end
