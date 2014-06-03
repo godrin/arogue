@@ -69,7 +69,7 @@ class MapView
     #  @window.topleft+
      middle=getMiddle(map) #   @window.center-map.player.pos
    #   middle=@window.topleft-map.rect.topleft
-      pp "MIDDLE",middle,@window.center
+      #pp "MIDDLE",middle,@window.center
       @window.each{|winPos|
         mapPos=winPos-middle
         if map.rect.contains(mapPos)
@@ -129,7 +129,7 @@ class MapView
   # returns true if object was painted
   def drawObject(map,what)
     middle=getMiddle(map) #@window.topleft-map.rect.topleft
-    pp "MIDDLE",middle
+    #pp "MIDDLE",middle
     winPos=what.pos+middle
     #only show if it's visible to the $player
     if TCOD.map_is_in_fov(@fov_map, what.x, what.y)
