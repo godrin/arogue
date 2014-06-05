@@ -231,7 +231,7 @@ mapInfo = make_map
 $map=mapInfo
 $objects = mapInfo.objects
 $player=mapInfo.objects.find{|o|o.type==:player}
-$overlays = [] #$story]
+$overlays = []
 $events= []
 
 mapView=MapView.new(mapInfo, Rect.new(20,0,SCREEN_WIDTH-21,SCREEN_HEIGHT-1))
@@ -260,11 +260,9 @@ until TCOD.console_is_window_closed()
     $player.move($map,*move[action])
     $player.pickup($map)
     progressStory
-
   end
 
   case action
-
   when :quit
     break
   end
