@@ -72,6 +72,15 @@ class Tile
   end
 end
 
+class Fov
+  def initialize(tcodFov)
+    @fov=tcodFov
+  end
+  def [](x,y) 
+    TCOD.map_is_in_fov(@fov, x, y)
+  end
+end
+
 class Map
   @@obj_fov_map = TCOD.map_new(MAP_WIDTH, MAP_HEIGHT)
 
@@ -127,8 +136,16 @@ class Map
       }
     }
   end
-end
 
+  def progressObjects
+    objects.each{|o|
+      if o.ai
+        TCOD.map_compute_fov(@@obj_fov_map, o.x, o.y, TORCH_RADIUS, FOV_LIGHT_WALLS, FOV_ALGO)
+        o.ai.call(o,Fov.new(@@obj_fov_map), self)
+      end
+    }
+  end
+end
 
 class AI
 end
@@ -143,48 +160,48 @@ def handle_keys(map)
     #Alt+Enter: toggle fullscreen
     TCOD.console_set_fullscreen(!TCOD.console_is_fullscreen)
   elsif key.vk == TCOD::KEY_ESCAPE
-    return true  #exit game
+    return :quit  #exit game
   end
 
   story=$overlays.find{|o|o.is_a?(StoryView)}
   if story
     if TCOD.console_is_key_pressed(TCOD::KEY_SPACE)
-      $overlays.select!{|o|not o.is_a?(StoryView)} #.clear
+      $overlays.select!{|o|not o.is_a?(StoryView)}
     end
-    #@overlays[0]
   else
     player=map.player
     #movement keys
     # use from event
     if key.pressed
-      case key.vk
-      when TCOD::KEY_UP, TCOD::KEY_KP8
-        player.move(map, 0,-1)
-      when TCOD::KEY_DOWN, TCOD::KEY_KP2
-        player.move(map,0,1)
-      when TCOD::KEY_LEFT, TCOD::KEY_KP4
-        player.move(map,-1,0)
-      when TCOD::KEY_RIGHT, TCOD::KEY_KP6
-        player.move(map,1,0)
-      when TCOD::KEY_UP, TCOD::KEY_KP1
-        player.move(map,-1,1)
-      when TCOD::KEY_UP, TCOD::KEY_KP3
-        player.move(map,1,1)
-      when TCOD::KEY_UP, TCOD::KEY_KP7
-        player.move(map,-1,-1)
-      when TCOD::KEY_UP, TCOD::KEY_KP9
-        player.move(map,1,-1)
-      else
-        puts "UNKNOWN KEY #{key.vk}"
-      end
-      player.pickup(map)
+      move=case key.vk
+           when TCOD::KEY_UP, TCOD::KEY_KP8
+             :up
+           when TCOD::KEY_DOWN, TCOD::KEY_KP2
+             :down
+           when TCOD::KEY_LEFT, TCOD::KEY_KP4
+             :left
+           when TCOD::KEY_RIGHT, TCOD::KEY_KP6
+             :right
+           when TCOD::KEY_UP, TCOD::KEY_KP1
+             :downleft
+           when TCOD::KEY_UP, TCOD::KEY_KP3
+             :downright
+           when TCOD::KEY_UP, TCOD::KEY_KP7
+             :upleft
+           when TCOD::KEY_UP, TCOD::KEY_KP9
+             :upright
+           else
+             puts "UNKNOWN KEY #{key.vk}"
+             nil
+           end
+      return move if move
     end
-
   end
-  false
+  nil
 end
 
 def progressStory
+  $map.progressObjects
   $map.computeFovsForObjects
   $events.each{|ev|
     $storyLine.each{|rule|
@@ -223,15 +240,34 @@ trap('SIGINT') { exit! }
 
 $events << [:player, :enters, :level, 0]
 
+progressStory
 until TCOD.console_is_window_closed()
-  progressStory
-
   #render the screen
   render_all($map, mapView)
 
   #handle keys and exit game if needed
-  will_exit = handle_keys($map)
-  break if will_exit
+  action = handle_keys($map)
+  move={:up=>[0,-1],
+        :down=>[0,1],
+        :left=>[-1,0],
+        :right=>[1,0],
+        :upleft=>[-1,-1],
+        :upright=>[-1,1],
+        :downleft=>[-1,1],
+        :downright=>[1,1]
+  }
+  if move[action]
+    $player.move($map,*move[action])
+    $player.pickup($map)
+    progressStory
+
+  end
+
+  case action
+
+  when :quit
+    break
+  end
 end
 # hard exit, because it hangs otherwise
 TCOD.console_set_fullscreen(false)

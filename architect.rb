@@ -22,6 +22,10 @@ class Rect
     @y2 = y + h
   end
 
+  def self.fromPos(x1,y1,x2,y2)
+    Rect.new([x1,x2].min,[y1,y2].min,(x2-x1).abs,(y2-y1).abs)
+  end
+
   def topleft
     Pos.new(@x1,@y1)
   end
@@ -52,12 +56,28 @@ class Rect
   def contains(pos)
     @x1<=pos.x and @x2>pos.x and @y1<=pos.y and @y2>pos.y
   end
- 
+
+  def borderPositions
+    ((@x1..@x2).map{|x|
+      [Pos.new(x,@y1),Pos.new(x,@y2)]
+    }+
+    (@y1..@y2).map{|y|
+      [Pos.new(@x1,y),Pos.new(@x2,y)]
+    }).flatten
+  end
+
   def intersect (other)
     #returns true if this rectangle intersects with another one
     return (@x1 <= other.x2 and @x2 >= other.x1 and
-      @y1 <= other.y2 and @y2 >= other.y1)
+            @y1 <= other.y2 and @y2 >= other.y1)
   end
+
+  def intersects_list(list)
+    list.select{|other|
+      self.intersect(other)
+    }.length >0
+  end
+
   def w
     @x2-@x1
   end
@@ -86,33 +106,6 @@ def make_free(map,rect)
   }
 end
 
-def create_room(map,room)
-  #go through the tiles in the rectangle and make them passable
-  p "#{room.x1}, #{room.x2}, #{room.y1}, #{room.y2}"
-  (room.x1 + 1 ... room.x2).each do |x|
-    (room.y1 + 1 ... room.y2).each do |y|
-      map[x][y].blocked = false
-      map[x][y].block_sight = false
-    end
-  end
-end
-
-def create_h_tunnel(map,x1, x2, y)
-  #horizontal tunnel. min() and max() are used in case x1>x2
-  ([x1,x2].min ... [x1,x2].max + 1).each do |x|
-    map[x][y].blocked = false
-    map[x][y].block_sight = false
-  end
-end
-
-def create_v_tunnel(map,y1, y2, x)
-  #vertical tunnel
-  ([y1,y2].min ... [y1,y2].max + 1).each do |y|
-    map[x][y].blocked = false
-    map[x][y].block_sight = false
-  end
-end
-
 def place_objects(room, num_rooms, object_definition)
   objects = []
   #choose random number of monsters
@@ -137,6 +130,90 @@ def place_objects(room, num_rooms, object_definition)
   objects
 end
 
+
+
+def make_map2
+  # fill map with "blocked" tiles
+  map = []
+  objects = []
+
+  mapRect=Rect.new(0,0,MAP_WIDTH,MAP_HEIGHT)
+
+  0.upto(MAP_WIDTH-1) do |x|
+    map.push([])
+    0.upto(MAP_HEIGHT-1) do |y|
+      map[x].push(Tile.new(true))
+    end
+  end
+
+  rooms = []
+  trials=0
+  directfails=0
+  begin
+    #random width and height
+    w = TCOD.random_get_int(nil, ROOM_MIN_SIZE, ROOM_MAX_SIZE)
+    h = TCOD.random_get_int(nil, ROOM_MIN_SIZE, ROOM_MAX_SIZE)
+    #random position without going out of the boundaries of the map
+    x = TCOD.random_get_int(nil, 1, MAP_WIDTH - w - 2)
+    y = TCOD.random_get_int(nil, 1, MAP_HEIGHT - h - 2)
+
+
+    #"Rect" class makes rectangles easier to work with
+    new_room = Rect.new(x, y, w, h)
+
+    rects=[new_room]
+
+    #run through the other rooms and see if they intersect with this one
+    if new_room.intersects_list(rooms)
+      directfails+=1
+      failed=true
+    end
+
+    if not failed
+
+      new_x, new_y = *new_room.center
+
+      if rooms.length > 0
+        #all rooms after the first
+        #connect it to the previous room with a tunnel
+
+        #center coordinates of previous room
+        prev_x, prev_y = *rooms[-1].center()
+
+        #draw a coin(random number that.equal? either 0 or 1)
+        if rand(2) == 1
+          #first move horizontally, then vertically
+          rects << Rect.fromPos(prev_x, prev_y, new_x, prev_y)
+          rects << Rect.fromPos(new_x,  prev_y, new_x, new_y)
+        else
+          #first move vertically, then horizontally
+          rects << Rect.fromPos(prev_x, prev_y, prev_x, new_y)
+          rects << Rect.fromPos(prev_x,  new_y, new_x, new_y)
+        end
+      end
+
+      #this means there are no intersections, so this room.equal? valid
+      if rects.select{|r|r.intersects_list(rooms[0..-2])}.length==0
+
+        #"paint" it to the map's tiles
+        rects.each{|r|
+          make_free(map,r)
+        }
+
+        objects<<place_objects( new_room, rooms.length, $architect)
+        objects.flatten!
+
+        #finally, append the new room to the list
+        rooms.push(new_room)
+        #rooms.concat(rects)
+      end
+    end
+    trials+=1
+  end while rooms.length < MAX_ROOMS and trials<1000000
+  pp "TRIALS",trials, rooms.length,directfails
+  Map.new(map, objects, mapRect)
+end
+
 def make_map
   # fill map with "blocked" tiles
   map = []
@@ -152,66 +229,68 @@ def make_map
   end
 
   rooms = []
-  num_rooms = 0
-
-  0.upto(MAX_ROOMS) do |r|
+  trials=0
+  directfails=0
+  begin
     #random width and height
-    w = TCOD.random_get_int(nil, ROOM_MIN_SIZE, ROOM_MAX_SIZE)
-    h = TCOD.random_get_int(nil, ROOM_MIN_SIZE, ROOM_MAX_SIZE)
+    w = rand(ROOM_MAX_SIZE-ROOM_MIN_SIZE)+ROOM_MIN_SIZE
+    h = rand(ROOM_MAX_SIZE-ROOM_MIN_SIZE)+ROOM_MIN_SIZE
     #random position without going out of the boundaries of the map
-    x = TCOD.random_get_int(nil, 1, MAP_WIDTH - w - 2)
-    y = TCOD.random_get_int(nil, 1, MAP_HEIGHT - h - 2)
-
+    x = rand(MAP_WIDTH-w-2)+1
+    y = rand(MAP_HEIGHT-h-2)+1
 
     #"Rect" class makes rectangles easier to work with
     new_room = Rect.new(x, y, w, h)
 
+    rects=[new_room]
+
     #run through the other rooms and see if they intersect with this one
-    failed = false
-    rooms.each do |other_room|
-      if new_room.intersect(other_room)
-        failed = true
-        break
-      end
+    if new_room.intersects_list(rooms)
+      directfails+=1
+      failed=true
     end
 
-    unless failed
-      #this means there are no intersections, so this room.equal? valid
+    if not failed
 
-      #"paint" it to the map's tiles
-      make_free(map,new_room)
-
-      objects<<place_objects( new_room, num_rooms, $architect)
-      objects.flatten!
-
-      #center coordinates of new room, will be useful later
       new_x, new_y = *new_room.center
 
-
-      if num_rooms > 0
+      if rooms.length > 0
         #all rooms after the first
         #connect it to the previous room with a tunnel
 
         #center coordinates of previous room
-        prev_x, prev_y = *rooms[num_rooms-1].center()
+        prev_x, prev_y = *rooms[-1].center()
 
         #draw a coin(random number that.equal? either 0 or 1)
-        if TCOD.random_get_int(nil, 0, 1) == 1
+        if rand(2) == 1
           #first move horizontally, then vertically
-          create_h_tunnel(map, prev_x, new_x, prev_y)
-          create_v_tunnel(map, prev_y, new_y, new_x)
+          rects << Rect.fromPos(prev_x, prev_y, new_x, prev_y)
+          rects << Rect.fromPos(new_x,  prev_y, new_x, new_y)
         else
           #first move vertically, then horizontally
-          create_v_tunnel(map, prev_y, new_y, prev_x)
-          create_h_tunnel(map, prev_x, new_x, new_y)
+          rects << Rect.fromPos(prev_x, prev_y, prev_x, new_y)
+          rects << Rect.fromPos(prev_x,  new_y, new_x, new_y)
         end
       end
 
-      #finally, append the new room to the list
-      rooms.push(new_room)
-      num_rooms += 1
+      #this means there are no intersections, so this room.equal? valid
+      if rects.select{|r|r.intersects_list(rooms[0..-2])}.length==0
+
+        #"paint" it to the map's tiles
+        rects.each{|r|
+          make_free(map,r)
+        }
+
+        objects<<place_objects( new_room, rooms.length, $architect)
+        objects.flatten!
+
+        #finally, append the new room to the list
+        rooms.push(new_room)
+        #rooms.concat(rects)
+      end
     end
-  end
+    trials+=1
+  end while rooms.length < MAX_ROOMS and trials<1000000
+  pp "TRIALS",trials, rooms.length,directfails
   Map.new(map, objects, mapRect)
 end
-

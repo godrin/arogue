@@ -59,7 +59,7 @@ $architect=[
 $storyLine=[
   [event(:player, :enters, :level, 0), actionTalk("Welcome", "Welcome to the legend of Godrin.")],
   [event(:player, :talksTo, :king), actionTalk("King","The time has come. Bring me my sword. Soon they'll be here")],
-  [event(:player, :noLongerSees, :king), actionVanish(:king)],
+  [event(:player, :takes, :sword), actionVanish(:king)],
   [event(:player, :walksInto, :wall), actionLog("Ouch")],
 ]
 
