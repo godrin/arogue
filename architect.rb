@@ -1,6 +1,5 @@
 require_relative './objects.rb'
-
-Map=Struct.new(:map,:objects, :rect)
+require_relative './map.rb'
 
 Pos=Struct.new(:x,:y)
 class Pos
@@ -9,6 +8,15 @@ class Pos
   end
   def -(p)
     Pos.new(self.x-p.x,self.y-p.y)
+  end
+
+  def len
+   Math.sqrt(self.x*self.x + self.y*self.y)
+  end
+  def neighbors
+    [[-1,0],[-1,-1],[0,-1],[1,-1],[1,0],[1,1],[0,1],[-1,1]].map{|a,b|
+      Pos.new(self.x+a,self.y+b)
+    }
   end
 end
 

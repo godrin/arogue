@@ -1,6 +1,6 @@
 require_relative './ai.rb'
 
-Obj=Struct.new(:x, :y, :name, :char, :type, :color, :block, :block_view, :hp, :ally, :sees, :stackable, :inventory, :ai)
+Obj=Struct.new(:x, :y, :name, :char, :type, :color, :block, :block_view, :hp, :ally, :sees, :stackable, :inventory, :ai, :aiData)
 class Obj
   def pos
     Pos.new(self.x, self.y)
@@ -28,6 +28,8 @@ class Obj
       #FIXME: check weight and pickable ?
       map.objects.delete(o)
       self.inventory.push(o)
+      o.x=-1
+      o.y=-1
       $events<<[self.type,:takes,o.type]
     }
   end
@@ -48,7 +50,7 @@ def object(pos,type,attrs={})
     d.new('Player', '@',c::WHITE, 0, 20, false, true),
     d.new('Orc', 'o', c::DESATURATED_GREEN, 0.8, 5, false, false, :monster),
     d.new('Troll', 'T', c::DARKER_GREEN, 1, 10, false, false, :monster),
-    d.new('Guard', 'G', c::YELLOW, 0, 60, false, true),
+    d.new('Guard', 'G', c::YELLOW, 0, 60, false, true, :saveking),
   ]
 
   t={}
@@ -58,10 +60,10 @@ def object(pos,type,attrs={})
   t=t[type]
   puts "CREATE #{type}"
   o=Obj.new(*pos, t.name, t.tile, type, t.color, (not t.stackable), true,
-            t.hp, t.ally, [], t.stackable, [], ai(t.ai))
+            t.hp, t.ally, [], t.stackable, [], ai(*[attrs[:ai]||t.ai].flatten))
 
   attrs.each{|k,v|
-    o.send(k.to_s+"=",v)
+    o.send(k.to_s+"=",v) unless k==:ai
   }
 
   o
