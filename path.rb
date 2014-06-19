@@ -13,7 +13,6 @@ module Path
 
   module Finder
     def findPath(p0, p1)
-      p "FIND #{p0.inspect} #{p1.inspect}"
       paths=[P.new([p0],0,(p1-p0).len)]
 
       tries=0
@@ -41,8 +40,7 @@ module Path
         tries+=1
         break if tries>30
       end
-      paths[0].positions
-    #  nil # no path found
+      paths[0].positions # take best path, even if it does not yet reach the destination
     end
   end
 end
