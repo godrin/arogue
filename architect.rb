@@ -11,12 +11,15 @@ class Pos
   end
 
   def len
-   Math.sqrt(self.x*self.x + self.y*self.y)
+    Math.sqrt(self.x*self.x + self.y*self.y)
   end
   def neighbors
     [[-1,0],[-1,-1],[0,-1],[1,-1],[1,0],[1,1],[0,1],[-1,1]].map{|a,b|
       Pos.new(self.x+a,self.y+b)
     }
+  end
+  def ==(o)
+    self.x==o.x and self.y==o.y
   end
 end
 

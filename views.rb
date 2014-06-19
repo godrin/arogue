@@ -15,6 +15,7 @@ class StoryView
 
     $screen.rect_text(@title,@titleColor,nil,*@r.xywh)
     $screen.rect_text(@text,@color,nil,*@r.shrink(1).xywh)
+    $screen.rect_text("<SPACE>",@color,nil,*@r.shrink(1).xywh)
   end
 end
 

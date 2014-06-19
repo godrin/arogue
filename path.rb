@@ -1,10 +1,10 @@
 
 module Path
-  P=Struct.new(:positions, :rest)
+  P=Struct.new(:positions, :goneweight, :rest)
 
   class P
     def weight
-      positions.length+rest
+      goneweight+rest
     end
     def <=>(o)
       weight<=>o.weight
@@ -13,28 +13,36 @@ module Path
 
   module Finder
     def findPath(p0, p1)
+      p "FIND #{p0.inspect} #{p1.inspect}"
+      paths=[P.new([p0],0,(p1-p0).len)]
 
-      paths=[P.new([p0],(p1-p0).len)]
+      tries=0
 
       loop do
         cur=paths.shift
 
         lastpos=cur.positions[-1]
         lastpos.neighbors.each{|n|
-          unless self.blocked(*n)
-            np=P.new(cur.positions+[n],(p1-n).len)
-            if n==p1
-              return np.positions
-            end
+          if n==p1
+            return cur.positions+[n]
+          end
+          blockedBy=self.blocked(*n)
+          if not blockedBy
+            np=P.new(cur.positions+[n],cur.goneweight+1,(p1-n).len)
+            paths<<np
+          elsif blockedBy!=[:wall]
+            np=P.new(cur.positions+[n],cur.goneweight+3,(p1-n).len)
             paths<<np
           end
         }
 
         paths.sort!
 
+        tries+=1
+        break if tries>30
       end
-      raise "no path found"
-
+      paths[0].positions
+    #  nil # no path found
     end
   end
 end
