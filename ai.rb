@@ -40,10 +40,8 @@ module AIs
     target=map.find(targetSym)
     path=map.findPath(obj.pos, target.pos)
     if path
-      pp path
       obj.move(map,*(path[1]-obj.pos))
     end
-    #    pp obj.aiData, target
   end
 
   def self.saveKing(obj, fov, map)

@@ -1,117 +1,16 @@
+require_relative './base.rb'
+
 require_relative './objects.rb'
 require_relative './map.rb'
 
-Pos=Struct.new(:x,:y)
-class Pos
-  def +(p)
-    Pos.new(self.x+p.x,self.y+p.y)
-  end
-  def -(p)
-    Pos.new(self.x-p.x,self.y-p.y)
-  end
-
-  def len
-    Math.sqrt(self.x*self.x + self.y*self.y)
-  end
-  def neighbors
-    [[-1,0],[-1,-1],[0,-1],[1,-1],[1,0],[1,1],[0,1],[-1,1]].map{|a,b|
-      Pos.new(self.x+a,self.y+b)
-    }
-  end
-  def ==(o)
-    self.x==o.x and self.y==o.y
-  end
-end
-
-class Rect
-  attr_accessor :x1, :y1, :x2, :y2
-  #a rectangle on the map. used to characterize a room.
-  def initialize (x, y, w, h)
-    @x1 = x
-    @y1 = y
-    @x2 = x + w
-    @y2 = y + h
-  end
-
-  def self.fromPos(x1,y1,x2,y2)
-    Rect.new([x1,x2].min,[y1,y2].min,(x2-x1).abs,(y2-y1).abs)
-  end
-
-  def topleft
-    Pos.new(@x1,@y1)
-  end
- 
-  def center
-    center_x = (@x1 + @x2) / 2
-    center_y = (@y1 + @y2) / 2
-    Pos.new(center_x, center_y)
-  end
-  def anywhere
-    Pos.new(@x1+rand(w-1)+1,@y1+rand(h-1)+1)
-  end
-  def top_middle
-    Pos.new((@x1+@x2)/2,@y1+1)
-  end
-  def top_left
-    Pos.new(@x1,@y1)
-  end
-  def top_right
-    Pos.new(@x2,@y1)
-  end
-  def shrink(d)
-    Rect.new(x1+d,y1+d,w-2*d,h-2*d)
-  end
-  def moved(x,y)
-    Rect.new(x1+x,y1+y,w,h)
-  end
-  def contains(pos)
-    @x1<=pos.x and @x2>pos.x and @y1<=pos.y and @y2>pos.y
-  end
-
-  def borderPositions
-    ((@x1..@x2).map{|x|
-      [Pos.new(x,@y1),Pos.new(x,@y2)]
-    }+
-    (@y1..@y2).map{|y|
-      [Pos.new(@x1,y),Pos.new(@x2,y)]
-    }).flatten
-  end
-
-  def intersect (other)
-    #returns true if this rectangle intersects with another one
-    return (@x1 <= other.x2 and @x2 >= other.x1 and
-            @y1 <= other.y2 and @y2 >= other.y1)
-  end
-
-  def intersects_list(list)
-    list.select{|other|
-      self.intersect(other)
-    }.length >0
-  end
-
-  def w
-    @x2-@x1
-  end
-  def h
-    @y2-@y1
-  end
-  def xywh
-    [@x1,@y1,w,h]
-  end
-
-  def each
-    (@x1..@x2).each{|x|
-      (@y1..@y2).each{|y|
-        yield Pos.new(x,y)
-      }
-    }
-  end
-end
 
 def make_free(map,rect)
   rect.each{|p|
     x,y=*p
     cell=map[x][y]
+    unless cell
+      puts "NOT FOUND #{x},#{y}"
+    end
     cell.blocked = false
     cell.block_sight = false
   }
@@ -142,8 +41,52 @@ def place_objects(room, num_rooms, object_definition)
 end
 
 
+def make_random_room(extends, mapRect)
+    w = (extends[:min]..extends[:max]).rand
+    h = (extends[:min]..extends[:max]).rand
+    #random position without going out of the boundaries of the map
+    x = (1..mapRect.w-w-2).rand
+    y = (1..mapRect.h-h-2).rand
 
-def make_map2
+    #"Rect" class makes rectangles easier to work with
+    Rect.new(x, y, w, h)
+end
+
+# dx, dy is direction of tunnel
+Door=Struct.new(:x,:y,:dx,:dy)
+
+def make_door(room)
+  dir=rand<0.5?-1:1
+  if rand<0.5
+    Door.new((room.x1+1..room.x2-1).rand,dir<0? room.y1 : room.y2,0,dir)
+  else
+    Door.new(dir<0? room.x1 : room.x2,(room.y1+1..room.y2-1).rand,dir,0)
+  end
+end
+
+def extend_room(extends,tunnelEndPos,dx,dy)
+    w = (extends[:min]..extends[:max]).rand
+    h = (extends[:min]..extends[:max]).rand
+
+    if dx!=0
+      x=tunnelEndPos.x-(dx<0?w*dx :0)
+      y=tunnelEndPos.y-rand(h-1)+1
+    else
+      x=tunnelEndPos.x-rand(w-1)+1
+      y=tunnelEndPos.y-(dy<0?h*dy :0)
+    end
+
+    #"Rect" class makes rectangles easier to work with
+    Rect.new(x, y, w, h)
+end
+
+def make_map(ops={})
+
+  ops||={}
+  roomExtends=ops[:roomExtends] || {
+    :min=>2,
+    :max=>6
+  }
   # fill map with "blocked" tiles
   map = []
   objects = []
@@ -157,20 +100,70 @@ def make_map2
     end
   end
 
-  rooms = []
+  firstRoom= make_random_room(roomExtends, mapRect)
+
+  rooms = [firstRoom]
+
+  roomIndex=0
+  begin
+    curRoom=rooms[roomIndex]
+    doors=[]
+    doorTries=0
+    begin
+      #pp "curToom",curRoom
+      door= make_door(curRoom)
+      doorTries+=1
+      pp "DOOR",door
+      tunnelLength=rand(5)+2
+      pp "tunnel",tunnelLength
+      tunnelEndPos=Pos.new(door.x+door.dx*tunnelLength,door.y+door.dy*tunnelLength)
+      pp "endpos",tunnelEndPos
+
+      tunnel=Rect.new(door.x+door.dx,
+                      door.y+door.dy, 
+                      door.dx*(tunnelLength-2), 
+                      door.dy*(tunnelLength-2))
+
+      nuRoom =  extend_room(roomExtends,tunnelEndPos,door.dx,door.dy)
+
+
+      nuRooms=[tunnel,nuRoom]
+      pp rooms,nuRooms
+      #exit
+      hit=false
+      ok=true
+      nuRooms.each{|r|
+        rooms.each{|r2|
+          hit|=r.intersect(r2)
+        }
+          ok&=mapRect.containsRect(r)
+      }
+      pp hit
+      unless hit
+        rooms=rooms+nuRooms
+      end
+
+    end while doorTries<20 and doors.length<5
+
+  end while rooms.length<5
+
+
+  pp "ROOMS",rooms
+
+  rooms.each_with_index{|room,index|
+    objects<<place_objects( room, index, $architect)
+    objects.flatten!
+    make_free(map,room)
+  }
+  return Map.new(map, objects, mapRect)
+  exit 1
+
+
   trials=0
   directfails=0
   begin
-    #random width and height
-    w = TCOD.random_get_int(nil, ROOM_MIN_SIZE, ROOM_MAX_SIZE)
-    h = TCOD.random_get_int(nil, ROOM_MIN_SIZE, ROOM_MAX_SIZE)
-    #random position without going out of the boundaries of the map
-    x = TCOD.random_get_int(nil, 1, MAP_WIDTH - w - 2)
-    y = TCOD.random_get_int(nil, 1, MAP_HEIGHT - h - 2)
-
-
     #"Rect" class makes rectangles easier to work with
-    new_room = Rect.new(x, y, w, h)
+    new_room = make_random_room(roomExtends, mapRect)
 
     rects=[new_room]
 
@@ -216,7 +209,6 @@ def make_map2
 
         #finally, append the new room to the list
         rooms.push(new_room)
-        #rooms.concat(rects)
       end
     end
     trials+=1
@@ -225,7 +217,7 @@ def make_map2
   Map.new(map, objects, mapRect)
 end
 
-def make_map
+def make_map2
   # fill map with "blocked" tiles
   map = []
   objects = []
