@@ -41,7 +41,7 @@ def place_objects(room, num_rooms, object_definition)
 end
 
 
-def make_random_room(extends, mapRect)
+def make_random_room(extends, mapRect,name="")
     w = (extends[:min]..extends[:max]).rand
     h = (extends[:min]..extends[:max]).rand
     #random position without going out of the boundaries of the map
@@ -49,7 +49,7 @@ def make_random_room(extends, mapRect)
     y = (1..mapRect.h-h-2).rand
 
     #"Rect" class makes rectangles easier to work with
-    Rect.new(x, y, w, h)
+    Rect.new(x, y, w, h, name)
 end
 
 # dx, dy is direction of tunnel
@@ -64,20 +64,25 @@ def make_door(room)
   end
 end
 
-def extend_room(extends,tunnelEndPos,dx,dy)
+def extend_room(extends,tunnelEndPos,dx,dy, name="")
     w = (extends[:min]..extends[:max]).rand
     h = (extends[:min]..extends[:max]).rand
 
     if dx!=0
-      x=tunnelEndPos.x-(dx<0?w*dx :0)
-      y=tunnelEndPos.y-rand(h-1)+1
+      x=tunnelEndPos.x-(dx<0?w :0)
+      r=rand(h+1) #rand(h-1)
+      y=tunnelEndPos.y+r-h
     else
-      x=tunnelEndPos.x-rand(w-1)+1
-      y=tunnelEndPos.y-(dy<0?h*dy :0)
+      r=rand(w+1) #rand(w-1)
+      x=tunnelEndPos.x+r-w
+      y=tunnelEndPos.y-(dy<0?h :0)
     end
 
+  #  puts "X:#{x} #{tunnelEndPos.x} #{w-1} #{r}"
+  #  puts "Y:#{y} #{tunnelEndPos.y} #{h-1} #{r}"
+
     #"Rect" class makes rectangles easier to work with
-    Rect.new(x, y, w, h)
+    Rect.new(x, y, w, h, name)
 end
 
 def make_map(ops={})
@@ -85,13 +90,13 @@ def make_map(ops={})
   ops||={}
   roomExtends=ops[:roomExtends] || {
     :min=>2,
-    :max=>6
+    :max=>7
   }
   # fill map with "blocked" tiles
   map = []
   objects = []
 
-  mapRect=Rect.new(0,0,MAP_WIDTH,MAP_HEIGHT)
+  mapRect=Rect.new(0,0,MAP_WIDTH-1,MAP_HEIGHT-1)
 
   0.upto(MAP_WIDTH-1) do |x|
     map.push([])
@@ -100,121 +105,88 @@ def make_map(ops={})
     end
   end
 
-  firstRoom= make_random_room(roomExtends, mapRect)
+  firstRoom= make_random_room(roomExtends, mapRect, "first")
 
   rooms = [firstRoom]
+  roomWalls=[]
 
   roomIndex=0
+  maxRooms=35
+  roomTries=30
+  maxSubRooms=4
+  maxSubRoomsTries=maxSubRooms*10
   begin
-    curRoom=rooms[roomIndex]
+    curRoom=rooms[-1] #.shuffle[0] #roomIndex]
     doors=[]
-    doorTries=0
+    doorTries=maxSubRooms
     begin
-      #pp "curToom",curRoom
-      door= make_door(curRoom)
-      doorTries+=1
-      pp "DOOR",door
-      tunnelLength=rand(5)+2
-      pp "tunnel",tunnelLength
-      tunnelEndPos=Pos.new(door.x+door.dx*tunnelLength,door.y+door.dy*tunnelLength)
-      pp "endpos",tunnelEndPos
+      pp "curToom",curRoom
+      door= make_door(curRoom.shrink(-1))
+      doorTries-=1
+          pp "DOOR",door
+      tunnelLength=rand(5)+1
+           pp "tunnel",tunnelLength
+      tunnelEndPos=Pos.new(door.x+door.dx*(1+tunnelLength),door.y+door.dy*(1+tunnelLength))
+            pp "endpos",tunnelEndPos
 
-      tunnel=Rect.new(door.x+door.dx,
+      tunnel=Rect.new(door.x,
+                      door.y, 
+                      door.dx*tunnelLength, 
+                      door.dy*tunnelLength, "tunnel #{rooms.length}")
+
+      shortenedTunnel=Rect.new(door.x+door.dx,
                       door.y+door.dy, 
                       door.dx*(tunnelLength-2), 
-                      door.dy*(tunnelLength-2))
-
-      nuRoom =  extend_room(roomExtends,tunnelEndPos,door.dx,door.dy)
+                      door.dy*(tunnelLength-2), "tunnel #{rooms.length}")
 
 
-      nuRooms=[tunnel,nuRoom]
-      pp rooms,nuRooms
-      #exit
-      hit=false
-      ok=true
-      nuRooms.each{|r|
-        rooms.each{|r2|
-          hit|=r.intersect(r2)
+      subRoomTries=maxSubRoomsTries
+      begin
+ 
+        nuRoom =  extend_room(roomExtends,tunnelEndPos,door.dx,door.dy, "room #{rooms.length}")
+
+
+        nuRooms=[tunnel,nuRoom]
+        #   pp rooms,nuRooms
+        #exit
+        hit=false
+        ok=true
+        nuRooms.each{|r|
+          roomWalls.each{|r2|
+            chit=r.intersect(r2)
+            puts "#{r2.inspect} hits #{r.inspect}" if chit
+            hit|=chit
+          }
+          ok&=mapRect.shrink(1).containsRect(r.shrink(-1))
         }
-          ok&=mapRect.containsRect(r)
-      }
-      pp hit
-      unless hit
-        rooms=rooms+nuRooms
-      end
-
-    end while doorTries<20 and doors.length<5
-
-  end while rooms.length<5
+        #pp "HIT:#{hit.inspect} ok:#{ok.inspect}"
+        if ok and not hit
+          rooms=rooms+nuRooms
+          [nuRoom,shortenedTunnel].each{|r|
+            roomWalls<<r.shrink(-1)
+          }
+          break
+        end
+        subRoomTries-=1
+      end while subRoomTries>0
+    end while doorTries>0 and doors.length<5 and rooms.length<maxRooms
+    roomIndex+=1
+    roomTries-=1
+  end while rooms.length<maxRooms and roomTries>0 #roomIndex<rooms.length
 
 
   pp "ROOMS",rooms
 
   rooms.each_with_index{|room,index|
-    objects<<place_objects( room, index, $architect)
-    objects.flatten!
+    if (index%2)==0
+      nuObjects=place_objects( room, index/2, $architect)
+      #pp "BJECTS",index,nuObjects,room,mapRect
+      objects<<nuObjects
+      objects.flatten!
+    end
     make_free(map,room)
   }
   return Map.new(map, objects, mapRect)
-  exit 1
-
-
-  trials=0
-  directfails=0
-  begin
-    #"Rect" class makes rectangles easier to work with
-    new_room = make_random_room(roomExtends, mapRect)
-
-    rects=[new_room]
-
-    #run through the other rooms and see if they intersect with this one
-    if new_room.intersects_list(rooms)
-      directfails+=1
-      failed=true
-    end
-
-    if not failed
-
-      new_x, new_y = *new_room.center
-
-      if rooms.length > 0
-        #all rooms after the first
-        #connect it to the previous room with a tunnel
-
-        #center coordinates of previous room
-        prev_x, prev_y = *rooms[-1].center()
-
-        #draw a coin(random number that.equal? either 0 or 1)
-        if rand(2) == 1
-          #first move horizontally, then vertically
-          rects << Rect.fromPos(prev_x, prev_y, new_x, prev_y)
-          rects << Rect.fromPos(new_x,  prev_y, new_x, new_y)
-        else
-          #first move vertically, then horizontally
-          rects << Rect.fromPos(prev_x, prev_y, prev_x, new_y)
-          rects << Rect.fromPos(prev_x,  new_y, new_x, new_y)
-        end
-      end
-
-      #this means there are no intersections, so this room.equal? valid
-      if rects.select{|r|r.intersects_list(rooms[0..-2])}.length==0
-
-        #"paint" it to the map's tiles
-        rects.each{|r|
-          make_free(map,r)
-        }
-
-        objects<<place_objects( new_room, rooms.length, $architect)
-        objects.flatten!
-
-        #finally, append the new room to the list
-        rooms.push(new_room)
-      end
-    end
-    trials+=1
-  end while rooms.length < MAX_ROOMS and trials<1000000
-  pp "TRIALS",trials, rooms.length,directfails
-  Map.new(map, objects, mapRect)
 end
 
 def make_map2
